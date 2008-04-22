@@ -1,0 +1,95 @@
+universe_api:  Library written for interface with the
+  device driver based upon VMELinux. This library provides both 
+  a c++ interface as well as a c interface to facilitate quicker
+  code development.  Description of the c interface is given below.
+  An effort has been made to make the interface as clean and simple
+  as possible.  This means that the c interface is slightly less
+  powerful than the c++ interface, but it should still provide the
+  necessary functionality.  For more information, please see the c++ 
+  header files.  
+
+Michael Marino, Jan 2008  
+
+The header file "universe_api.h" should be included and the library
+libuniverse_api.a should be linked into any application using the api
+library.  
+
+The library provides the following c functions:
+
+extern TUVMEDevice* get_new_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth, uint32_t sizeOfImage = 0);
+  /* This function grabs a new device with the given specifications. It will return NULL if there is any error. */
+  /* An error can be caused if there are no more available devices, or if something is wrong with the input parameters. */
+  /* If sizeOfImage is 0, then the driver attempts to make the size of the returned device 1/8 of the total pci memory
+     space allocated to the Universe II chip. */  
+  /* The size of the image specifies how many addresses from the base vmeAddress can be read/written. */ 
+  /* vmeAddress should be normally 64K aligned (0x10000, with the bottom 16 bits always 0), but there are 
+     2 devices which have 4K resolution (0x100 aligned).  The driver api will attempt to return one of these
+     2 devices when the addressModifier specifies A16, but it is not guaranteed.  */ 
+  /* dataWidth specifies the width of the data in bytes. */
+
+extern int32_t close_device(TUVMEDevice* device);
+  /* Closes a device and releases it back into the available pool.  */
+
+extern TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth);
+  /* Grabs the dma device and sets up the transfer.  If NULL, this means that DMA device is busy. */
+  /* A transfer from the DMA is initiated with the read_device function. */
+
+extern TUVMEDevice* get_ctl_device();
+  /* Grabs the control device.  If NULL, this means that control device is busy. */
+
+extern void set_dma_no_increment(bool noInc = true);
+  /* This specifies that the dma device should not increment a VME address. This is useful if a dma read
+   * of x bytes is required at one particular address.  
+   * It should be called before get_dma_device.*/
+
+extern void set_hw_byte_swap(bool doSwap = true);
+  /* Sets byte swap in the hardware.  This only works on the VX 40x/04x cpu boards and has undefined behavior for other boards. */
+
+extern int32_t read_device(TUVMEDevice*, char* buffer, uint32_t numBytes, uint32_t offset = 0);
+  /* reads numBytes bytes from a device into a buffer at an offset on the device. */
+  /* returns number of bytes read, or less than 0 if error. */
+
+extern int32_t write_device(TUVMEDevice*, char* buffer, uint32_t numBytes, uint32_t offset = 0);
+  /* writes numBytes bytes into a device from a buffer at an offset on the device. */
+  /* returns number of bytes written, or less than 0 if error. */
+
+How To: (only read functions are shown, but write functions work exactly the same)
+
+
+  1) Grab a device, and read from it:  
+
+  TUVMEDevice* device = get_new_device(0x0, 0x29, 2, 0x10000); //Map the entire A16 space beginning at 0x0
+  char buffer[4];
+  if (device == NULL) exit; // Error!
+  if (read_device(device, buffer, 4, 0x3300) < 0 ) { // read at adress 0x3300 
+    // Error!
+    exit;
+  }
+  // Otherwise we have a successfull read.
+
+  close_device(device);  // This is an unnecessary call since the api library handles the closing automatically.
+                         // However, if the pool of 8 devices is already empty, this will release a device to be
+                         // opened/enabled anew via the get_new_device function.
+                         // Normally, readout code will set up devices at the beginning of the run so it doesn't need
+                         // to be done multiple times.
+
+  2) Perform a DMA transfer:
+
+  set_dma_no_increment(true); // Set this if this dma does not auto-increment the address.
+  TUVMEDevice* device = get_dma_device(0x2101000, 0xB, 4); // Set up a DMA transfer, A32, D32 BLT, beginning at address 0x2101000
+  if (device == NULL) exit; // Error!
+  char buffer[4096]; 
+  if (read_device(device, buffer, 4096) != 4096) { // DMA transfer 4096 bytes
+    //Error!
+  }
+
+  // If the setting on the dma device do not change, it is possible to not call get_dma_device multiple times, but rather hold
+  // on to the pointer to the device.  However, the programmer must take care not to change the device settings elsewhere in the code.
+
+  3) Read/Write from/to the Universe registers
+
+  TUVMEDevice* device = get_ctl_device(); // Grab the ctl device. 
+  char buffer[4];
+  if (read_device(device, buffer, 4, 0x4) < 0 ) { // the ctl device can only read/write 4 bytes at a time!
+    // Error
+  } 
