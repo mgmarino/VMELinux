@@ -1,10 +1,13 @@
 
 setup_driver_auto:
-	@chkconfig --list | awk  '{print $1}' | grep -q $(BASENAME); if [ "${?}" != 0 ]; then chkconfig --add $(BASENAME); fi 
+	@echo "Setting up driver automatically for Red Hat."
+	@if chkconfig --list | awk  '{print $1}' | grep -q $(BASENAME); then chkconfig --add $(BASENAME); fi 
 	@chkconfig --level 0123456 $(BASENAME) off 
-	@chkconfig --level 2345 $(BASENAME) 
+	@chkconfig --level 2345 $(BASENAME) on
 	@service $(BASENAME) start
 
 uninstall_driver_auto:
-	@rm -f $(INSTALLINITDIR)/$(BASENAME)	
+	@echo "Removing driver automatically for Red Hat."
 	@chkconfig --list | awk  '{print $1}' | grep -q $(BASENAME); if [ "${?}" == 0 ]; then chkconfig --del $(BASENAME); fi
+	@service $(BASENAME) stop
+	@rm -f $(INSTALLINITDIR)/$(BASENAME)	

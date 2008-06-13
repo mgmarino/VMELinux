@@ -2,6 +2,7 @@ include $(PWD)/../config.mk
 
 obj-m := universe.o 
 
+OSSUFFIX := $(shell $(PWD)/detOS.sh)
 KDIR  := /lib/modules/$(shell uname -r)/build
 PWD   := $(shell pwd)
 BASENAME = $(basename $(obj-m))
@@ -9,7 +10,8 @@ INSTALLDIR = /lib/modules/$(shell uname -r)/kernel/drivers
 INSTALLSCRIPTSDIR = /usr/local/universe/scripts
 INSTALLSCRIPTSDIRSED = $(subst /,\/,$(INSTALLSCRIPTSDIR))
 INSTALLINITDIR := $(shell if [ -d /etc/init.d ]; then echo "/etc/init.d"; else echo "/etc/rc.d"; fi)
-OSSUFFIX := $(shell ./detOS.sh)
+
+.PHONY: setup_driver_auto uninstall_driver_auto
 
 $(BASENAME).ko default: $(BASENAME).c
 	$(MAKE) -C $(KDIR) M=$(PWD) modules

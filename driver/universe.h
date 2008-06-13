@@ -5,18 +5,17 @@
 //designer: Michael Wyrick                                                      
 //programmer: Michael Wyrick                                                    
 //platform: Linux 2.4.x
+// Updated for Linux 2.6.x by Michael Marino.
+// Updated driver api for c++, c and gcc >= 4
 //language: GCC 2.95 and 3.0
-//module: ca91c042
+//module: universe
 //------------------------------------------------------------------------------  
 //  Purpose: Provide a Kernel Driver to Linux for the Universe I and II 
-//           Universe model number ca91c042
+//           Universe model number universe
 //  Docs:                                  
 //    This driver supports both the Universe and Universe II chips                                     
 //------------------------------------------------------------------------------  
 // RCS:
-// $Id: ca91c042.h,v 1.4 2001/10/27 03:50:07 jhuggins Exp $
-// $Log: ca91c042.h,v $
-// Revision 1.4  2001/10/27 03:50:07  jhuggins
 // These changes add support for the extra images offered by the Universe II.
 // CVS : ----------------------------------------------------------------------
 //
@@ -108,7 +107,7 @@ typedef struct
 #define SEEK_CUR 1
 #endif
 
-#define CONFIG_REG_SPACE        0xA0000000
+#define CONFIG_REG_SPACE       0xA0000000
 
 #define PCI_SIZE_8             0x0001
 #define PCI_SIZE_16            0x0002
@@ -135,138 +134,138 @@ typedef struct
 #define PCI_BS                 0x0010
 #define PCI_MISC1              0x003C
 
-#define LSI0_CTL              0x0100
-#define LSI0_BS               0x0104
-#define LSI0_BD               0x0108
-#define LSI0_TO               0x010C
+#define LSI0_CTL               0x0100
+#define LSI0_BS                0x0104
+#define LSI0_BD                0x0108
+#define LSI0_TO                0x010C
 
-#define LSI1_CTL              0x0114
-#define LSI1_BS               0x0118
-#define LSI1_BD               0x011C
-#define LSI1_TO               0x0120
+#define LSI1_CTL               0x0114
+#define LSI1_BS                0x0118
+#define LSI1_BD                0x011C
+#define LSI1_TO                0x0120
 
-#define LSI2_CTL             0x0128
-#define LSI2_BS              0x012C
-#define LSI2_BD              0x0130
-#define LSI2_TO              0x0134
+#define LSI2_CTL               0x0128
+#define LSI2_BS                0x012C
+#define LSI2_BD                0x0130
+#define LSI2_TO                0x0134
 
-#define LSI3_CTL          0x013C
-#define LSI3_BS              0x0140
-#define LSI3_BD              0x0144
-#define LSI3_TO              0x0148
+#define LSI3_CTL               0x013C
+#define LSI3_BS                0x0140
+#define LSI3_BD                0x0144
+#define LSI3_TO                0x0148
 
-#define LSI4_CTL          0x01A0
-#define LSI4_BS              0x01A4
-#define LSI4_BD              0x01A8
-#define LSI4_TO              0x01AC
-
-#define LSI5_CTL          0x01B4
-#define LSI5_BS              0x01B8
-#define LSI5_BD              0x01BC
-#define LSI5_TO              0x01C0
-
-#define LSI6_CTL          0x01C8
-#define LSI6_BS              0x01CC
-#define LSI6_BD              0x01D0
-#define LSI6_TO              0x01D4
-
-#define LSI7_CTL          0x01DC
-#define LSI7_BS              0x01E0
-#define LSI7_BD              0x01E4
-#define LSI7_TO              0x01E8
-
-#define SCYC_CTL          0x0170
-#define SCYC_ADDR          0x0174
-#define SCYC_EN              0x0178
-#define SCYC_CMP          0x017C
-#define SCYC_SWP          0x0180
-#define LMISC                0x0184
-#define SLSI                0x0188
-#define L_CMDERR          0x018C
-#define LAERR                0x0190
-
-#define DCTL                0x0200
-#define DTBC                0x0204
-#define DLA                  0x0208
-#define DVA                  0x0210
-#define DCPP                0x0218
-#define DGCS                0x0220
-#define D_LLUE              0x0224
-
-#define LINT_EN              0x0300
-#define LINT_STAT          0x0304
-#define LINT_MAP0          0x0308
-#define LINT_MAP1          0x030C
-#define VINT_EN              0x0310
-#define VINT_STAT          0x0314
-#define VINT_MAP0          0x0318
-#define VINT_MAP1          0x031C
-#define STATID              0x0320
-#define V1_STATID          0x0324
-#define V2_STATID          0x0328
-#define V3_STATID          0x032C
-#define V4_STATID          0x0330
-#define V5_STATID          0x0334
-#define V6_STATID          0x0338
-#define V7_STATID          0x033C
-
-#define MAST_CTL          0x0400
-#define MISC_CTL          0x0404
-#define MISC_STAT         0x0408
-#define USER_AM           0x040C
-
-#define U2SPEC            0x04FC
-
-#define VSI0_CTL          0x0F00
-#define VSI0_BS           0x0F04
-#define VSI0_BD           0x0F08
-#define VSI0_TO           0x0F0C
-
-#define VSI1_CTL          0x0F14
-#define VSI1_BS              0x0F18
-#define VSI1_BD              0x0F1C
-#define VSI1_TO              0x0F20
-
-#define VSI2_CTL          0x0F28
-#define VSI2_BS              0x0F2C
-#define VSI2_BD              0x0F30
-#define VSI2_TO              0x0F34
-
-#define VSI3_CTL          0x0F3C
-#define VSI3_BS              0x0F40
-#define VSI3_BD              0x0F44
-#define VSI3_TO              0x0F48
-
-#define VRAI_CTL          0x0F70
-#define VRAI_BS              0x0F74
-#define VCSR_CTL          0x0F80
-#define VCSR_TO              0x0F84
-#define V_AMERR              0x0F88
-#define VAERR                0x0F8C
-
-#define VSI4_CTL          0x0F90
-#define VSI4_BS              0x0F94
-#define VSI4_BD              0x0F98
-#define VSI4_TO              0x0F9C
-
-#define VSI5_CTL          0x0FA4
-#define VSI5_BS              0x0FA8
-#define VSI5_BD              0x0FAC
-#define VSI5_TO              0x0FB0
-                              
-#define VSI6_CTL          0x0FB8
-#define VSI6_BS              0x0FBC
-#define VSI6_BD              0x0FC0
-#define VSI6_TO              0x0FC4
-
-#define VSI7_CTL          0x0FCC
-#define VSI7_BS              0x0FD0
-#define VSI7_BD              0x0FD4
-#define VSI7_TO              0x0FD8
-                              
-#define VCSR_CLR          0x0FF4
-#define VCSR_SET          0x0FF8
-#define VCSR_BS              0x0FFC
+#define LSI4_CTL               0x01A0
+#define LSI4_BS                0x01A4
+#define LSI4_BD                0x01A8
+#define LSI4_TO                0x01AC
+                               
+#define LSI5_CTL               0x01B4
+#define LSI5_BS                0x01B8
+#define LSI5_BD                0x01BC
+#define LSI5_TO                0x01C0
+                               
+#define LSI6_CTL               0x01C8
+#define LSI6_BS                0x01CC
+#define LSI6_BD                0x01D0
+#define LSI6_TO                0x01D4
+                               
+#define LSI7_CTL               0x01DC
+#define LSI7_BS                0x01E0
+#define LSI7_BD                0x01E4
+#define LSI7_TO                0x01E8
+                               
+#define SCYC_CTL               0x0170
+#define SCYC_ADDR              0x0174
+#define SCYC_EN                0x0178
+#define SCYC_CMP               0x017C
+#define SCYC_SWP               0x0180
+#define LMISC                  0x0184
+#define SLSI                   0x0188
+#define L_CMDERR               0x018C
+#define LAERR                  0x0190
+                               
+#define DCTL                   0x0200
+#define DTBC                   0x0204
+#define DLA                    0x0208
+#define DVA                    0x0210
+#define DCPP                   0x0218
+#define DGCS                   0x0220
+#define D_LLUE                 0x0224
+                               
+#define LINT_EN                0x0300
+#define LINT_STAT              0x0304
+#define LINT_MAP0              0x0308
+#define LINT_MAP1              0x030C
+#define VINT_EN                0x0310
+#define VINT_STAT              0x0314
+#define VINT_MAP0              0x0318
+#define VINT_MAP1              0x031C
+#define STATID                 0x0320
+#define V1_STATID              0x0324
+#define V2_STATID              0x0328
+#define V3_STATID              0x032C
+#define V4_STATID              0x0330
+#define V5_STATID              0x0334
+#define V6_STATID              0x0338
+#define V7_STATID              0x033C
+                               
+#define MAST_CTL               0x0400
+#define MISC_CTL               0x0404
+#define MISC_STAT              0x0408
+#define USER_AM                0x040C
+                               
+#define U2SPEC                 0x04FC
+                               
+#define VSI0_CTL               0x0F00
+#define VSI0_BS                0x0F04
+#define VSI0_BD                0x0F08
+#define VSI0_TO                0x0F0C
+                               
+#define VSI1_CTL               0x0F14
+#define VSI1_BS                0x0F18
+#define VSI1_BD                0x0F1C
+#define VSI1_TO                0x0F20
+                               
+#define VSI2_CTL               0x0F28
+#define VSI2_BS                0x0F2C
+#define VSI2_BD                0x0F30
+#define VSI2_TO                0x0F34
+                               
+#define VSI3_CTL               0x0F3C
+#define VSI3_BS                0x0F40
+#define VSI3_BD                0x0F44
+#define VSI3_TO                0x0F48
+                               
+#define VRAI_CTL               0x0F70
+#define VRAI_BS                0x0F74
+#define VCSR_CTL               0x0F80
+#define VCSR_TO                0x0F84
+#define V_AMERR                0x0F88
+#define VAERR                  0x0F8C
+                               
+#define VSI4_CTL               0x0F90
+#define VSI4_BS                0x0F94
+#define VSI4_BD                0x0F98
+#define VSI4_TO                0x0F9C
+                               
+#define VSI5_CTL               0x0FA4
+#define VSI5_BS                0x0FA8
+#define VSI5_BD                0x0FAC
+#define VSI5_TO                0x0FB0
+                                
+#define VSI6_CTL               0x0FB8
+#define VSI6_BS                0x0FBC
+#define VSI6_BD                0x0FC0
+#define VSI6_TO                0x0FC4
+                               
+#define VSI7_CTL               0x0FCC
+#define VSI7_BS                0x0FD0
+#define VSI7_BD                0x0FD4
+#define VSI7_TO                0x0FD8
+                                
+#define VCSR_CLR               0x0FF4
+#define VCSR_SET               0x0FF8
+#define VCSR_BS                0x0FFC
 
 
 // DMA General Control/Status Register DGCS (0x220)
@@ -321,20 +320,20 @@ typedef struct
 /************************************/
 #define PCI_ENABLE        0x80000000
 #define PCI_POSTED_WRITE  0x40000000
-#define PCI_VDW_8BIT      (VDW_8BIT << 22)
+#define PCI_VDW_8BIT      (VDW_8BIT  << 22)
 #define PCI_VDW_16BIT     (VDW_16BIT << 22)
 #define PCI_VDW_32BIT     (VDW_32BIT << 22)
 #define PCI_VDW_64BIT     (VDW_64BIT << 22)
      
-#define PCI_VAS_A16       (VAS_A16 << 16)
-#define PCI_VAS_A24       (VAS_A24 << 16)
-#define PCI_VAS_A32       (VAS_A32 << 16)
+#define PCI_VAS_A16       (VAS_A16   << 16)
+#define PCI_VAS_A24       (VAS_A24   << 16)
+#define PCI_VAS_A32       (VAS_A32   << 16)
 #define PCI_VAS_CRCSR     (VAS_CRCSR << 16)
 #define PCI_VAS_USER1     (VAS_USER1 << 16)
 #define PCI_VAS_USER2     (VAS_USER2 << 16)
                           
-#define PCI_PGM_DATA      (PGM_DATA << 14)
-#define PCI_PGM_PROG      (PGM_PROG << 14)
+#define PCI_PGM_DATA      (PGM_DATA  << 14)
+#define PCI_PGM_PROG      (PGM_PROG  << 14)
                           
 #define PCI_SUPER_NONP    (SUPER_NONP << 12)
 #define PCI_SUPER_SUP     (SUPER_SUP << 12)
