@@ -8,6 +8,7 @@ BASENAME = $(basename $(obj-m))
 INSTALLDIR = /lib/modules/$(shell uname -r)/kernel/drivers
 INSTALLSCRIPTSDIR = /usr/local/universe/scripts
 INSTALLSCRIPTSDIRSED = $(subst /,\/,$(INSTALLSCRIPTSDIR))
+INSTALLINITDIR := $(shell if [ -d /etc/init.d ]; then echo "/etc/init.d"; else echo "/etc/rc.d"; fi)
 
 $(BASENAME).ko default: $(BASENAME).c
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
@@ -20,13 +21,12 @@ install: $(BASENAME).ko
 	$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 744 install_universe_driver.sh $(INSTALLSCRIPTSDIR) || exit $$?
 	$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 744 remove_universe_driver.sh $(INSTALLSCRIPTSDIR) || exit $$?
 	@sed 's/@INSTALLSCRIPTSDIR@/$(INSTALLSCRIPTSDIRSED)/' < $(BASENAME).input > $(BASENAME).temp
-	$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp /etc/init.d/$(BASENAME) || exit $$?
-	@chkconfig --list | awk  '{print $1}' | grep -q $(BASENAME); if [ "${?}" != 0 ]; then chkconfig --add $(BASENAME); fi
-	@chkconfig --level 0123456 $(BASENAME) off
-	@chkconfig --level 2345 $(BASENAME) on
+	$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp $(INSTALLINITDIR)/$(BASENAME) || exit $$?
+	@ echo "$(BASENAME) installed in $(INSTALLINITDIR)" 
+#	if [ -d /etc/init.d ]; then $(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp /etc/init.d/$(BASENAME) || exit $$?; echo "Service installed in /etc/init.d"; else $(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp /etc/rc.d/$(BASENAME) || exit $$?; echo "Service installed in /etc/rc.d"; fi
+	@if which chkconfig &> /dev/null; then chkconfig --list | awk  '{print $1}' | grep -q $(BASENAME); if [ "${?}" != 0 ]; then chkconfig --add $(BASENAME); fi; chkconfig --level 0123456 $(BASENAME) off; chkconfig --level 2345 $(BASENAME) on; echo "Be sure to begin the service with: service $(BASENAME) start"; else echo "chkconfig not found, you must start the service $(BASENAME) yourself located in $(INSTALLINITDIR)"; fi
 	@rm -f $(BASENAME).temp
 	@echo "Installation complete."
-	@echo "Be sure to begin the service with: service $(BASENAME) start"
 
 uninstall:
 	@echo "Beginning uninstall..."

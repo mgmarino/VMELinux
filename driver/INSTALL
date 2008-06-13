@@ -12,6 +12,19 @@ Make sure you are the root user.
 2) type "make"
 
 3) type "make install"
+   Look at the messages output.  If you are running a redhat variant, the 
+   make command will automatically insert the service to be started at boot time.
+   You still have to start the service with the command:
+   
+      service universe start
+
+   If you are not running a redhat variant, it will say that chkconfig is not found.
+   If this is true, you have to modify the appropriate conf file (probably rc.conf) 
+   to load this at boot.  For example, for crux, make sure that you add "universe" to
+   the list of SERVICES in /etc/rc.conf.  In crux, you can start the service with the
+   command:
+
+      /etc/rc.d/universe start
 
 4) type "make check" to verify that the module is running.  An error message means
    the install failed. 
