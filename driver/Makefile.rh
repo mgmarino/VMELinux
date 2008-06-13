@@ -1,0 +1,10 @@
+
+setup_driver_auto:
+	@chkconfig --list | awk  '{print $1}' | grep -q $(BASENAME); if [ "${?}" != 0 ]; then chkconfig --add $(BASENAME); fi 
+	@chkconfig --level 0123456 $(BASENAME) off 
+	@chkconfig --level 2345 $(BASENAME) 
+	@service $(BASENAME) start
+
+uninstall_driver_auto:
+	@rm -f $(INSTALLINITDIR)/$(BASENAME)	
+	@chkconfig --list | awk  '{print $1}' | grep -q $(BASENAME); if [ "${?}" == 0 ]; then chkconfig --del $(BASENAME); fi
