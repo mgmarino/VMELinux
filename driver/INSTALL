@@ -1,4 +1,4 @@
-7 Jan 2008
+13 Jun 2008 - M. Marino
 
 This C program is a Linux Kernel version 2.2.X and 2.4.x module.
 UPDATE: This program works for linux kernels 2.6.x (Michael Marino)
@@ -6,6 +6,9 @@ UPDATE: This program works for linux kernels 2.6.x (Michael Marino)
 To compile and install the VMELinux Universe Driver:
 
 Make sure you are the root user.
+
+This Make procedure should work for any linux kernel >= 2.6
+It has been tested on Fedora Core and CRUX.
 
 1) verify you are in the driver directory
 
@@ -23,3 +26,4 @@ Make sure you are the root user.
 4) type "make check" to verify that the module is running.  An error message means
    the install failed. 
 
+5) To uninstall the driver and unload the module from the kernel type "make uninstall"
