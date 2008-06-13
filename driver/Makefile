@@ -47,8 +47,8 @@ uninstall:
 	@rm -f $(INSTALLDIR)/vme/$(BASENAME).ko	
 	@rm -f $(INSTALLSCRIPTSDIR)/install_universe_driver.sh	
 	@rm -f $(INSTALLSCRIPTSDIR)/remove_universe_driver.sh	
-	@[ "$(ls -A $(INSTALLDIR)/vme)" ] && rm -r $(INSTALLDIR)/vme
-	@[ "$(ls -A $(INSTALLSCRIPTSDIR))" ] && rm -r $(INSTALLSCRIPTSDIR)
+	@find $(INSTALLDIR)/vme -depth -type d -empty -exec rm -r {} \;
+	@find $(INSTALLSCRIPTSDIR) -depth -type d -empty -exec rm -r {} \;
 	@$(MAKE) uninstall_driver_auto
 	@echo "Uninstall complete."
 

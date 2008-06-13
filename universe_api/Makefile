@@ -38,9 +38,7 @@ uninstall:
 	@rm -f $(INSTALLDIR)/include/universe_api.h $(INSTALLDIR)/include/universe.h $(INSTALLDIR)/lib/$(LIB)
 	@for i in $(HEADERS); do rm -f $(INSTALLDIR)/include/$$i); done
 # now try to get rid of the folders
-	@[ "$(ls -A $(INSTALLDIR)/include)" ] && rm -r $(INSTALLDIR)/include
-	@[ "$(ls -A $(INSTALLDIR)/lib)" ] && rm -r $(INSTALLDIR)/lib
-	@[ "$(ls -A $(INSTALLDIR))" ] && rm -r $(INSTALLDIR)
+	@find $(INSTALLDIR) -depth -type d -empty -exec rm -r {} \;
 
 clean :
 	rm -f $(LIB) *.o .depend
