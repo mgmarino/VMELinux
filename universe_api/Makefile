@@ -34,6 +34,13 @@ install: $(LIB)
 	@for i in $(HEADERS); do ($(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 644 $$i $(INSTALLDIR)/include) || exit $$?; done
 	@echo "Installation complete."
  
+uninstall:
+	@rm -f $(INSTALLDIR)/include/universe_api.h $(INSTALLDIR)/include/universe.h $(INSTALLDIR)/lib/$(LIB)
+	@for i in $(HEADERS); do rm -f $(INSTALLDIR)/include/$$i); done
+# now try to get rid of the folders
+	@[ "$(ls -A $(INSTALLDIR)/include)" ] && rm -r $(INSTALLDIR)/include
+	@[ "$(ls -A $(INSTALLDIR)/lib)" ] && rm -r $(INSTALLDIR)/lib
+	@[ "$(ls -A $(INSTALLDIR))" ] && rm -r $(INSTALLDIR)
 
 clean :
 	rm -f $(LIB) *.o .depend
