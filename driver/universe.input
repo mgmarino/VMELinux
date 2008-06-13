@@ -8,9 +8,6 @@
 #	expects driver modules to exist in /lib/modules/(version)/kernel/drivers/vme
 #		(this simple init.d script developed at UW CENPA 9/2007)
 
-# Source function library.
-. /etc/rc.d/init.d/functions
-
 # check that the install script exists
 prog="universe"
 scriptdir=@INSTALLSCRIPTSDIR@
