@@ -44,12 +44,12 @@ install: $(BASENAME).ko
 
 uninstall:
 	@echo "Beginning uninstall..."
+	@$(MAKE) uninstall_driver_auto
 	@rm -f $(INSTALLDIR)/vme/$(BASENAME).ko	
 	@rm -f $(INSTALLSCRIPTSDIR)/install_universe_driver.sh	
 	@rm -f $(INSTALLSCRIPTSDIR)/remove_universe_driver.sh	
 	@find $(INSTALLDIR)/vme -depth -type d -empty -exec rm -r {} \;
 	@find $(INSTALLSCRIPTSDIR) -depth -type d -empty -exec rm -r {} \;
-	@$(MAKE) uninstall_driver_auto
 	@echo "Uninstall complete."
 
 loaddriver:
