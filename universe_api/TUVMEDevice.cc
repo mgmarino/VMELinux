@@ -10,11 +10,13 @@ TUVMEDevice::TUVMEDevice(uint32_t devNumber)
   fIsOpen = false;
   fFileNum = -1;
   fDevNumber = devNumber;
+  pthread_mutex_init( &fLock, NULL );
 }
 
 TUVMEDevice::~TUVMEDevice()
 {
   Close();
+  pthread_mutex_destroy( &fLock );
 }
 
 int TUVMEDevice::Open()  

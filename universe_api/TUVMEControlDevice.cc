@@ -3,7 +3,7 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-TUVMEControlDevice::TUVMEControlDevice(): TUVMEDevice(-1)
+TUVMEControlDevice::TUVMEControlDevice(): TUVMEDevice((uint32_t)-1)
 {
   fRevisionID = 0;
 }

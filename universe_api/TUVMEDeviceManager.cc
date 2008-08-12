@@ -25,28 +25,38 @@ TUVMEDeviceManager::TUVMEDeviceManager()
     /* Setup device. */
   }
   fSizePerImage = fControlDevice.GetPCIMemorySize()/TUVMEDevice::kNumberOfDevices;
+
+  pthread_rwlock_init( &fReadWriteLock, NULL );
 }
 
 TUVMEDeviceManager::~TUVMEDeviceManager()
 {
   std::set<TUVMEDevice*>::iterator iter; 
+  pthread_rwlock_wrlock( &fReadWriteLock );
   for (iter = fAllDevices.begin();iter != fAllDevices.end(); iter++) {  
     delete *iter;
   }
+  pthread_rwlock_unlock( &fReadWriteLock );
+  pthread_rwlock_destroy( &fReadWriteLock );
 }
 
 TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress, 
   uint32_t addressModifier, uint32_t dataWidth, uint32_t sizeOfImage)
 {
+  pthread_rwlock_rdlock( &fReadWriteLock );
   TUVMEDevice* device = NULL;
   /* First check if there is something in the map that can handle this*/
   /* If not, we have to insert it into the set.*/
   /* Check to see if the available devices is 0. */
   if (fDevicesRemaining.empty()) {
+    pthread_rwlock_unlock( &fReadWriteLock );
     /* We have to delete a member. */
     return NULL;
   }
-  if (sizeOfImage > fSizePerImage) return NULL; 
+  if (sizeOfImage > fSizePerImage) {
+    pthread_rwlock_unlock( &fReadWriteLock );
+    return NULL; 
+  }
   /* Size is too big too handle, try increasing the size of memory allocated
    * to the driver. */
 
@@ -74,16 +84,24 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
         if ((label != kA16Dev1) && (label != kA16Dev2)) break; 
       }
     }
+
+    pthread_rwlock_unlock( &fReadWriteLock );
+    pthread_rwlock_wrlock( &fReadWriteLock );
     fDevicesRemaining.erase(label);
+    pthread_rwlock_unlock( &fReadWriteLock );
+
     device = new TUVMEDevice(label);
     if (device->Open() >= 0) {
       break;
     }
     /* We couldn't open, try to loop through to find one to work. */
+    pthread_rwlock_rdlock( &fReadWriteLock );
     delete device; 
     device = NULL;
   }
-  if (!device) return NULL;
+  if (!device) {
+    return NULL;
+  }
   device->SetWithAddressModifier(addressModifier);
   device->SetDataWidth((TUVMEDevice::ETUVMEDeviceDataWidth)dataWidth);
   device->SetVMEAddress(vmeAddress);
@@ -98,21 +116,29 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
     delete device;
     return NULL;
   }
+  pthread_rwlock_wrlock( &fReadWriteLock );
   fAllDevices.insert(device);
+  pthread_rwlock_unlock( &fReadWriteLock );
   return device;
 }
 
 int32_t TUVMEDeviceManager::CloseDevice(TUVMEDevice* device)
 {
   /* First make sure it exists in here. */
+  pthread_rwlock_rdlock( &fReadWriteLock );
   if (fAllDevices.find(device) == fAllDevices.end()) {
     /* Doesn't exist?  This is odd, some dev file is not being 
      * handled by the manager.*/
+    pthread_rwlock_unlock( &fReadWriteLock );
     return -1;
   }
+  pthread_rwlock_unlock( &fReadWriteLock );
+  pthread_rwlock_wrlock( &fReadWriteLock );
   fAllDevices.erase(device);
   fDevicesRemaining.insert(device->GetDevNumber());
   /* Return it to the available pool. */
+  pthread_rwlock_unlock( &fReadWriteLock );
+
   delete device;
   return 0;
 }
@@ -121,6 +147,7 @@ TUVMEDevice* TUVMEDeviceManager::GetDMADevice(uint32_t vmeAddress,
   uint32_t addressModifier, uint32_t dataWidth)
 {
   /* We have to setup the DMA device. */
+  fDMADevice.LockDevice();
   fDMADevice.SetWithAddressModifier(addressModifier);
   fDMADevice.SetDataWidth((TUVMEDevice::ETUVMEDeviceDataWidth)dataWidth);
   fDMADevice.SetVMEAddress(vmeAddress);
@@ -154,6 +181,11 @@ TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint3
   return gUniverseDevMgr.GetDMADevice(vmeAddress, addressModifier, dataWidth);
 }
 
+void release_dma_device(void)
+{
+  gUniverseDevMgr.ReleaseDMADevice();
+}
+
 TUVMEDevice* get_ctl_device()
 {
   return gUniverseDevMgr.GetControlDevice();
@@ -174,14 +206,24 @@ uint32_t get_max_size_of_image()
   return gUniverseDevMgr.GetSizePerImage();
 }
 
-extern void set_ds_negation_speed(uint32_t speed)
+void set_ds_negation_speed(uint32_t speed)
 {
   dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice())->SetDSNegationSpeed((TUVMEControlDevice::ECycleSpeeds)speed);
 }
 
-extern void set_ds_high_time_blts(uint32_t speed)
+void set_ds_high_time_blts(uint32_t speed)
 {
   dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice())->SetDSHighTimeBLTs((TUVMEControlDevice::ECycleSpeeds)speed);
+}
+
+void lock_device(TUVMEDevice* dev)
+{
+  dev->LockDevice();
+}
+
+void unlock_device(TUVMEDevice* dev)
+{
+  dev->UnlockDevice();
 }
 
 int32_t read_device(TUVMEDevice* dev, char* buffer, uint32_t numBytes, uint32_t offset)

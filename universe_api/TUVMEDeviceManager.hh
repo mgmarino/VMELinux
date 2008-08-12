@@ -8,6 +8,7 @@
 
 #ifdef __cplusplus
 
+#include <pthread.h>
 #include <set> 
 #include <vector> 
 
@@ -21,8 +22,12 @@ class TUVMEDeviceManager {
     TUVMEDevice* GetDevice(uint32_t vmeAddress, 
       uint32_t addressModifier, uint32_t dataWidth, uint32_t sizeOfImage = 0);
     TUVMEDevice* GetControlDevice() {return &fControlDevice;}
+
+    /* DMA read device. */
     TUVMEDevice* GetDMADevice(uint32_t vmeAddress, 
       uint32_t addressModifier, uint32_t dataWidth);
+    void ReleaseDMADevice() { fDMADevice.UnlockDevice(); }
+
     int32_t CloseDevice(TUVMEDevice* device);
 
     inline uint32_t GetSizePerImage() {return fSizePerImage;}
@@ -40,11 +45,14 @@ class TUVMEDeviceManager {
     TUVMEControlDevice fControlDevice;
     TUVMEDMADevice fDMADevice;
     uint32_t fSizePerImage;
+
+    pthread_rwlock_t fReadWriteLock;
     
 };
 #endif /*__cplusplus*/
 
 /* The following defines the c function interface. */
+/* It is important to note that the following functions are not generally thread-safe. */
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,11 +62,18 @@ extern "C" {
 extern TUVMEDevice* get_new_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth, uint32_t sizeOfImage);
   /* This function grabs a new device with the given specifications. It will return NULL if there is any error. */
   /* An error can be caused if there are no more available devices, or if something is wrong with the input parameters. */
+  /* Not thread safe. */
 extern int32_t close_device(TUVMEDevice* device);
   /* Closes a device and releases it back into the available pool.  */
+  /* Not thread safe. */
 extern TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth);
   /* Grabs the dma device and sets up the transfer.  If NULL, this means that DMA device is busy. */
   /* A transfer from the DMA is initiated with the read_device function. */
+  /* A call to this function locks the DMA device to the calling thread.  *
+   * It *must* be released by calling release_dma_device(). */
+extern void release_dma_device(void);
+  /* Returns the DMA device to the available pool. */
+  /* This must not be called if the dma device is not owned. */
 extern TUVMEDevice* get_ctl_device(void);
   /* Grabs the control device.  If NULL, this means that control device is busy. */
 extern void set_dma_no_increment(bool noInc);
@@ -91,6 +106,11 @@ extern void set_ds_high_time_blts(uint32_t speed);
 #ifdef __cplusplus
 extern "C" {
 #endif
+/* Locking functions for use with threads.  This is important when a device 
+   could be called across different threads. */
+extern void lock_device(TUVMEDevice*);
+extern void unlock_device(TUVMEDevice*);
+
 extern int32_t read_device(TUVMEDevice*, char* buffer, uint32_t numBytes, uint32_t offset);
   /* reads numBytes bytes from a device into a buffer at an offset on the device. */
 extern int32_t write_device(TUVMEDevice*, char* buffer, uint32_t numBytes, uint32_t offset);

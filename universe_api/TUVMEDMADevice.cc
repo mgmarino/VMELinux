@@ -3,7 +3,7 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-TUVMEDMADevice::TUVMEDMADevice(): TUVMEDevice(-1)
+TUVMEDMADevice::TUVMEDMADevice(): TUVMEDevice((uint32_t)-1)
 {
   fUseNoIncrement = false;
 }

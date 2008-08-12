@@ -5,6 +5,7 @@
 #ifdef __cplusplus
 #include <string>
 #include "universe.h"
+#include <pthread.h>
 
 
 class TUVMEDevice {
@@ -61,6 +62,9 @@ class TUVMEDevice {
     virtual int Enable(); 
     void Close();
 
+    /* Locking functions for thread safety. */
+    virtual int32_t LockDevice() { return pthread_mutex_lock( &fLock ); }
+    virtual int32_t UnlockDevice() { return pthread_mutex_unlock( &fLock ); }
 
     int32_t Read(char* buffer, uint32_t numBytes, uint32_t offset = 0);
     int32_t Write(char* buffer, uint32_t numBytes, uint32_t offset = 0);
@@ -80,6 +84,8 @@ class TUVMEDevice {
     int32_t fFileNum;
     bool fIsOpen;
     int32_t fDevNumber;
+
+    pthread_mutex_t fLock;
      
 };
 #else
