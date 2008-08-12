@@ -6,7 +6,6 @@ TUVMEDeviceManager::TUVMEDeviceManager()
     fDevicesRemaining.insert(i);
   }
   fUsePostedWrites = false;
-  fUseNonIncremented = false;
   if (fControlDevice.Open() < 0) {
     /* Error*/
   } else {
@@ -144,14 +143,14 @@ int32_t TUVMEDeviceManager::CloseDevice(TUVMEDevice* device)
 }
 
 TUVMEDevice* TUVMEDeviceManager::GetDMADevice(uint32_t vmeAddress, 
-  uint32_t addressModifier, uint32_t dataWidth)
+  uint32_t addressModifier, uint32_t dataWidth, bool autoIncrement)
 {
   /* We have to setup the DMA device. */
   fDMADevice.LockDevice();
   fDMADevice.SetWithAddressModifier(addressModifier);
   fDMADevice.SetDataWidth((TUVMEDevice::ETUVMEDeviceDataWidth)dataWidth);
   fDMADevice.SetVMEAddress(vmeAddress);
-  fDMADevice.SetNoIncrement(fUseNonIncremented);
+  fDMADevice.SetNoIncrement(!autoIncrement);
   if (fDMADevice.Enable() < 0) return NULL;
   return &fDMADevice;
 }
@@ -176,9 +175,9 @@ int32_t close_device(TUVMEDevice* device)
   return gUniverseDevMgr.CloseDevice(device);
 }
 
-TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth)
+TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth, bool autoIncrement)
 {
-  return gUniverseDevMgr.GetDMADevice(vmeAddress, addressModifier, dataWidth);
+  return gUniverseDevMgr.GetDMADevice(vmeAddress, addressModifier, dataWidth, autoIncrement);
 }
 
 void release_dma_device(void)
@@ -189,11 +188,6 @@ void release_dma_device(void)
 TUVMEDevice* get_ctl_device()
 {
   return gUniverseDevMgr.GetControlDevice();
-}
-
-void set_dma_no_increment(bool noInc)
-{
-  gUniverseDevMgr.SetUseNonIncremented(noInc);
 }
 
 void set_hw_byte_swap(bool doSwap)

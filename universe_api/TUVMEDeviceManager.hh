@@ -25,7 +25,8 @@ class TUVMEDeviceManager {
 
     /* DMA read device. */
     TUVMEDevice* GetDMADevice(uint32_t vmeAddress, 
-      uint32_t addressModifier, uint32_t dataWidth);
+      uint32_t addressModifier, uint32_t dataWidth, 
+      bool autoIncrement);
     void ReleaseDMADevice() { fDMADevice.UnlockDevice(); }
 
     int32_t CloseDevice(TUVMEDevice* device);
@@ -34,11 +35,8 @@ class TUVMEDeviceManager {
     
     void SetUsePostedWrites(bool usePostedWrites = true) 
       {fUsePostedWrites = usePostedWrites;}
-    void SetUseNonIncremented(bool useNoInc = true) 
-      {fUseNonIncremented = useNoInc;}
   protected:
     bool fUsePostedWrites;
-    bool fUseNonIncremented;
 
     std::set<TUVMEDevice*> fAllDevices; 
     std::set<uint32_t> fDevicesRemaining;
@@ -66,7 +64,7 @@ extern TUVMEDevice* get_new_device(uint32_t vmeAddress, uint32_t addressModifier
 extern int32_t close_device(TUVMEDevice* device);
   /* Closes a device and releases it back into the available pool.  */
   /* Not thread safe. */
-extern TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth);
+extern TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth, bool autoIncrement);
   /* Grabs the dma device and sets up the transfer.  If NULL, this means that DMA device is busy. */
   /* A transfer from the DMA is initiated with the read_device function. */
   /* A call to this function locks the DMA device to the calling thread.  *
@@ -76,10 +74,6 @@ extern void release_dma_device(void);
   /* This must not be called if the dma device is not owned. */
 extern TUVMEDevice* get_ctl_device(void);
   /* Grabs the control device.  If NULL, this means that control device is busy. */
-extern void set_dma_no_increment(bool noInc);
-  /* This specifies that the dma device should not increment a VME address. This is useful if a dma read
-   * of x bytes is required at one particular address.  
-   * It should be called before get_dma_device.*/
 extern void set_hw_byte_swap(bool doSwap);
   /* Sets byte swap in the hardware.  This only works on the VX 40x/04x cpu boards and has undefined behavior for other boards. */
 extern uint32_t get_max_size_of_image(void);
