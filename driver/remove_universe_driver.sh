@@ -11,7 +11,7 @@ if [ "${?}" != 0 ]; then
   printf "Exiting.\n"
   exit 1
 fi 
-/sbin/rmmod  $module
+/sbin/rmmod  $module || exit $?
 
 # remove stale nodes
 rm -f /dev/${device}m[0-8]

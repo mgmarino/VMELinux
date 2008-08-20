@@ -16,20 +16,14 @@ scriptdir=@INSTALLSCRIPTSDIR@
 start() 
 {
         echo -n $"Starting ${prog}: " 
-        [ -x $scriptdir/install_universe_driver.sh ] && $scriptdir/install_universe_driver.sh
-		RETVAL=$?
-        echo
-	return  $RETVAL
+        [ -x $scriptdir/install_universe_driver.sh ] && $scriptdir/install_universe_driver.sh || exit $?
 }
 
 stop() 
 {
         echo -n $"Shutting down ${prog}: "
 
-        [ -x $scriptdir/remove_universe_driver.sh ] && $scriptdir/remove_universe_driver.sh 
-		RETVAL=$?
-        echo
-	return  $RETVAL
+        [ -x $scriptdir/remove_universe_driver.sh ] && $scriptdir/remove_universe_driver.sh || exit $?
 }
 
 
