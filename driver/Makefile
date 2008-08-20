@@ -39,12 +39,12 @@ install: $(BASENAME).ko
 	$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp $(INSTALLINITDIR)/$(BASENAME) || exit $$?
 	@ echo "$(BASENAME) installed in $(INSTALLINITDIR)" 
 	@rm -f $(BASENAME).temp
-	@$(MAKE) setup_driver_auto
+	@$(MAKE) setup_driver_auto || exit $$?
 	@echo "Install complete."
 
 uninstall:
 	@echo "Beginning uninstall..."
-	@$(MAKE) uninstall_driver_auto
+	@$(MAKE) uninstall_driver_auto || exit $$?
 	@rm -f $(INSTALLDIR)/vme/$(BASENAME).ko	
 	@rm -f $(INSTALLSCRIPTSDIR)/install_universe_driver.sh	
 	@rm -f $(INSTALLSCRIPTSDIR)/remove_universe_driver.sh	
