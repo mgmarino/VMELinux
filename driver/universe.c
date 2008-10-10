@@ -36,7 +36,8 @@
 static char Version[] = "1.3.r1 2008Jan07";
 
 #include <linux/version.h>
-
+#include <linux/cdev.h>
+#include <linux/poll.h>
 #include <linux/utsrelease.h>
 #include <linux/autoconf.h>
 #include <linux/init.h>
@@ -46,7 +47,6 @@ static char Version[] = "1.3.r1 2008Jan07";
 #include <linux/errno.h>
 #include <linux/proc_fs.h>
 #include <linux/pci.h>
-#include <linux/poll.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <asm/pgtable.h>
@@ -88,7 +88,6 @@ MODULE_LICENSE("GPL");
 struct universe_dev {
 	int ok_to_write;		/* Can I write to the hardware */
 	int opened;			/* Is it open? */
-	int image_ba;			/* Base virtual address for this device */
 	int image_perform_ioremap;	/* Should we ioremap? */ 
 	int image_is_ioremapped;	/* Device is ioremapped. */ 
 	int ctl_address;		/* Offset of the ctl for a device */	
@@ -96,10 +95,10 @@ struct universe_dev {
 	int bd_address;			/* Offset where bd is stored for a device */	
 	int to_address;			/* Offset where to is stored for a device */	
 	int vme_address;		/* Base vme address */	
+	char* image_ba;			/* Base virtual address for this device */
 	unsigned int image_ptr;		/* Pointer to the image */
 	unsigned int ctl_register;	/* Control register value for the image */	
-	struct semaphore sem;		/* Mutual exclusion semaphore */
-	struct cdev dev;		/* Character device structure */
+	struct cdev cdev;		/* Character device structure */
 };
 
 
@@ -117,25 +116,23 @@ static int	universe_mmap(struct file *,struct vm_area_struct *);
 static int	universe_init_module(void);
 static void	universe_exit_module(void);
 
-static void	universe_setup_cdev(struct universe_dev *, int index); 
+static void	universe_setup_universe_dev(struct universe_dev *, int index); 
 
 static void	universe_vma_open(struct vm_area_struct *);
 static void	universe_vma_close(struct vm_area_struct *);
 
 static int	universe_check_bus_error(void);
+
 #ifdef UNIVERSE_DEBUG
 static int	universe_procinfo(char *, char **, off_t, int, int *,void *);
 static void	register_proc(void);
 static void	unregister_proc(void);
-// Status Vars
-static unsigned int read	= 0;
-static unsigned int writes 	= 0;
-static unsigned int ioctls 	= 0;
+
+static struct proc_dir_entry *universe_procdir;
 #endif /* UNIVERSE_DEBUG */
 //----------------------------------------------------------------------------
 // Types
 //----------------------------------------------------------------------------
-static struct proc_dir_entry *universe_procdir;
 
 static struct file_operations universe_fops = 
 {
@@ -169,7 +166,6 @@ static int aBD[]	= {	LSI0_BD, LSI1_BD, LSI2_BD, LSI3_BD,
 static int aTO[]	= {	LSI0_TO, LSI1_TO, LSI2_TO, LSI3_TO,
 				LSI4_TO, LSI5_TO, LSI6_TO, LSI7_TO	}; 
 
-static struct universe_dev universe_devices[universe_nr_devs];
 
 static int irq = 0;
 static char *baseaddr	= 0;
@@ -181,7 +177,12 @@ int universe_major	= 0;
 int universe_minor	= 0;
 int universe_nr_devs 	= MAX_MINOR + 1;
 int memory_is_reserved	= 0;
+static struct universe_dev universe_devices[MAX_MINOR + 1];
 
+// Status Vars
+static unsigned int reads	= 0;
+static unsigned int writes 	= 0;
+static unsigned int ioctls 	= 0;
 //-----------------------------------------------------------------------------
 // Function	: universe_setup_universe_dev
 // Inputs	: void
@@ -201,7 +202,7 @@ static void universe_setup_universe_dev(struct universe_dev *dev, int index)
 	cdev_init(&(dev->cdev), &universe_fops);
 	dev->cdev.owner = THIS_MODULE;
 	dev->cdev.ops = &universe_fops;
-	err = dev_add(&(dev->cdev), devno, 1);
+	err = cdev_add(&(dev->cdev), devno, 1);
 	if (err) {
 		printk(	KERN_NOTICE "Error (%d) addding universe dev: %d",
 			err, index );
@@ -236,9 +237,9 @@ universe_exit_module(void)
 	free_irq(pcivector,NULL);		 // Free Vector
 
 	for (i=0;i<universe_nr_devs;i++) {
-		if (	universe_devices[i]->image_ba && 
-			universe_devices[i]->image_is_ioremapped == 1)
-			iounmap(universe_devices[i]->image_ba);
+		if (	universe_devices[i].image_ba && 
+			universe_devices[i].image_is_ioremapped == 1)
+			iounmap(universe_devices[i].image_ba);
 	}		
 	iounmap(baseaddr);
 	if (memory_is_reserved == 1) {
@@ -257,26 +258,26 @@ module_exit(universe_exit_module);
 static int __init
 universe_init_module(void)
 {
-	int result;
+	int result,i;
 	unsigned int temp, ba;
 	char vstr[80];
 	struct pci_dev *universe_pci_dev = NULL;
+	dev_t dev_number;
 
 	sprintf(vstr,"Tundra Universe PCI-VME Bridge Driver %s\n",Version);
-	printk(KERN_INFO vstr);
+	printk(KERN_INFO "%s", vstr);
 	printk(KERN_INFO "Copyright 1997-2001, Michael J. Wyrick\n");
 	printk(KERN_INFO "Copyright 2008, Michael G. Marino\n");
 
 	// Getting the device major and minor numbers
-	dev_t dev_number;
 	result = alloc_chrdev_region(&dev_number, 0, universe_nr_devs,"universe");
-	universe_major = MAJOR(dev_number);
-	if ( result < 0 ); 
+	if ( result < 0 ) { 
 		printk(KERN_WARNING "Error getting major: %d\n", universe_major);
-		return result ;
+		return result;
 	} else {
 		printk(KERN_INFO "Device files major number: %d \n", universe_major);
 	}
+	universe_major = MAJOR(dev_number);
 	// device major and minor numbers found
 
 
@@ -338,13 +339,13 @@ universe_init_module(void)
 
 		pci_read_config_dword(universe_pci_dev, PCI_INTERRUPT_LINE, &irq);
 		irq &= 0x000000FF;  // Only a byte in size
-		result = request_irq(irq, irq_handler, IRQF_DISABLED, "VMEBus (universe)", NULL);
+		/*result = request_irq(irq, irq_handler, IRQF_DISABLED, "VMEBus (universe)", NULL);
 		if (result) {
 			printk(KERN_WARNING "universe: can't get assigned pci irq vector %02X\n", irq);
-		} else {
+		} else {*/
 			writel(0x0000, baseaddr+LINT_MAP0);  // Map all ints to 0
 			writel(0x0000, baseaddr+LINT_MAP1);  // Map all ints to 0
-		}
+		/*}*/
 
 	} else {
 		// We didn't find the universe device, so get out. 
@@ -367,7 +368,7 @@ universe_init_module(void)
 
 	// Enable DMA Interrupts
 	writel(0x0700, baseaddr+LINT_EN);
-	
+	for(i=0;i<universe_nr_devs;i++) universe_setup_universe_dev(&universe_devices[i], i);	
 	// Success 
 	return 0; 
 }
@@ -455,7 +456,8 @@ static void unregister_proc()
 static int universe_open(struct inode *inode,struct file *file)
 {
 	struct universe_dev *dev; 
-	dev = container_of(inode->c_dev, struct universe_dev, cdev);
+	dev = container_of(inode->i_cdev, struct universe_dev, cdev);
+	file->private_data = dev;
 	if (!dev->opened) {
 		dev->opened = 1;
 		return 0;
@@ -469,16 +471,15 @@ static int universe_open(struct inode *inode,struct file *file)
 //----------------------------------------------------------------------------
 static int universe_release(struct inode *inode,struct file *file)
 {
-	struct universe_dev *dev; 
-	dev = container_of(inode->c_dev, struct universe_dev, cdev);
-	file->private_data = dev;
+	struct universe_dev *dev = file->private_data; 
 
+	dev->opened--;
 	dev->ok_to_write = 0;
 	/* Disable the image, reset the registers */
-	if (dev->ctl_address) writel(0x0, dev->ctl_address);
-	if (dev->bs_address) writel(0x0, dev->bs_address);
-	if (dev->bd_address) writel(0x0, dev->bd_address);
-	if (dev->to_address) writel(0x0, dev->to_address);
+	if (dev->ctl_address) writel(0x0, baseaddr + dev->ctl_address);
+	if (dev->bs_address) writel(0x0, baseaddr + dev->bs_address);
+	if (dev->bd_address) writel(0x0, baseaddr + dev->bd_address);
+	if (dev->to_address) writel(0x0, baseaddr + dev->to_address);
 
 	if (dev->image_ba && dev->image_is_ioremapped == 1) {
 		/* Get rid of the ioremapped memory. */
@@ -503,7 +504,7 @@ static long long universe_llseek(struct file *file,loff_t offset,int whence)
 
 	struct universe_dev *dev = file->private_data; 
 
-	if (whence == SEEK_SET) dev->image_ptr = dev->image_ba + offset;
+	if (whence == SEEK_SET) dev->image_ptr = (int)(dev->image_ba + offset);
 	else if (whence == SEEK_CUR) dev->image_ptr += offset;
 	else return -EPERM;	
 
@@ -556,7 +557,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 			val = readl(baseaddr+DGCS);
 
 		// VME Address ( and PCI address must be 8-byte aligned with each other)							
-		dma_align = DMA_vme & 0x7;	
+		dma_align = dev->vme_address & 0x7;	
 
 		// Setup DMA Buffer to read data into
 		DMA_Buffer_Size = count + dma_align;				 
@@ -572,7 +573,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 
 		// Setup DMA regs
 		// setup DMA for a *read*
-		DMA &= 0x7FFFFFFF; // Sets L2V bit for a read
+		dev->ctl_register &= 0x7FFFFFFF; // Sets L2V bit for a read
 		writel(dev->ctl_register,baseaddr+DCTL);	 // Setup Control Reg
 		writel(count,baseaddr+DTBC);	 // Count			
 		writel(pci,baseaddr+DLA);	// PCI Address
@@ -667,7 +668,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 //----------------------------------------------------------------------------
 static ssize_t universe_write(struct file *file, const char *buf, size_t count, loff_t *ppos)
 {
-	int x,p;
+	int x;
 	unsigned int numt,remain,tmp;
 	char *temp = (char *)buf;
 
@@ -773,7 +774,7 @@ static ssize_t universe_write(struct file *file, const char *buf, size_t count, 
 
 		for (x=0;x<numt;x++) {
 			__copy_from_user(&vs,temp,2);
-			writew(vs,(char*)image_ptr[minor]);
+			writew(vs,(char*)dev->image_ptr);
 
 			// Check for a Bus Error
 			tmp = universe_check_bus_error(); 
@@ -844,7 +845,7 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 			dev->ok_to_write = 1;
 		} else {
 			arg &= 0xFFFFFFFE; // *always* use memory space, not i/o 
-			writel(arg,dev->ctl_address);
+			writel(arg,baseaddr + dev->ctl_address);
 		}
 		break;
 
@@ -863,7 +864,7 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 		if (arg+bs < size_to_reserve+reserve_from_address) {
 			/* we want to make sure that the bound doesn't overshoot our reserved memory. */
 			
-			writel(arg+bs,baseaddr+dev->bd_addressa);
+			writel(arg+bs,baseaddr+dev->bd_address);
 			if (dev->image_ba && dev->image_is_ioremapped == 1) {
 				iounmap(dev->image_ba);
 				dev->image_is_ioremapped = 0;
@@ -982,7 +983,7 @@ static int universe_mmap(struct file *file,struct vm_area_struct *vma)
 		physical_address, virtual_size);
 	if (remap_pfn_range( 	vma, 
 				vma->vm_start, 
-				physical_address >> PAGE_SIZE, 
+				physical_address >> PAGE_SHIFT, 
 				virtual_size, 
 				vma->vm_page_prot)) {
 		/* Something failed, maybe try again? */
