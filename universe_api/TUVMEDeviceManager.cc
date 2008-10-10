@@ -107,9 +107,10 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
   device->SetAllowPostedWrites(fUsePostedWrites);
   device->SetUseIORemap(true); // we don't remap things yet
   device->SetPCIOffset(label*fSizePerImage);
-  device->SetSizeOfImage(((sizeOfImage==0) ? fSizePerImage : sizeOfImage)-1);
+  device->SetSizeOfImage(((sizeOfImage==0) ? fSizePerImage : sizeOfImage));
   if (device->Enable() < 0) {
     /* Hmmm, this isn't good, not sure what to do? */
+    /* Generally this happens if an ioremap fails, (e.g. vmalloc isn't set high enough) */
     /* Keep the device out of the Devices remaining since it could've been in use
      * by someone else. */
     delete device;
