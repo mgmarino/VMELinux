@@ -7,7 +7,7 @@
 //platform: Linux 2.4.x
 // Updated for Linux 2.6.x by Michael Marino.
 // Updated driver api for c++, c and gcc >= 4
-//language: GCC 2.95 and 3.0
+//language: GCC 4.x 
 //module: universe
 //------------------------------------------------------------------------------  
 //  Purpose: Provide a Kernel Driver to Linux for the Universe I and II 
@@ -40,10 +40,6 @@ typedef void (*TDMAcallback)(int status);
 char* Universe_BaseAddr(void);
 //  Returns the PCI IRQ That the universe is using
 int Universe_IRQ(void);
-
-char* mapvme(unsigned int pci, unsigned int vme, unsigned int size, 
-             int image,int ctl);
-void unmapvme(char *ptr, int image);
 
 // Interrupt Stuff
 void enable_vmeirq(unsigned int irq);
