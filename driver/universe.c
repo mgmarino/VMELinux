@@ -263,7 +263,7 @@ universe_exit_module(void)
 
 	iowrite32(0,universe_driver.baseaddr + LINT_EN);		 // Turn off Ints
 	pcivector = ioread32(universe_driver.baseaddr+PCI_MISC1) & 0x000000FF; 
-	free_irq(pcivector,NULL);		 // Free Vector
+	free_irq(universe_driver.irq,&universe_driver);		 // Free Vector
 
 	for (i=0;i<universe_nr_devs;i++) {
 		if (	universe_devices[i].image_ba && 
@@ -317,6 +317,11 @@ universe_init_module(void)
 						NULL))) {
 		// The device was found on the PCI bus. 
 		printk(KERN_INFO "Universe device found.");
+		if (!(result = pci_enable_device(universe_driver.pci_dev))) {
+			printk(KERN_WARNING "Failed to enable Universe device.\n");
+			return result;
+		}
+		printk(KERN_INFO "Universe device enabled.");
 
 		// Turning latency off 
 		pci_write_config_dword(universe_driver.pci_dev, PCI_MISC0, 0);
@@ -330,15 +335,12 @@ universe_init_module(void)
 		pci_read_config_dword(universe_driver.pci_dev, PCI_MISC0, &temp);
 		printk(KERN_INFO "Misc0 = %08X\n",temp);			
 
-		// Grabbing the interrupt request
-		pci_read_config_dword(universe_driver.pci_dev, PCI_INTERRUPT_LINE, &universe_driver.irq);
-		universe_driver.irq &= 0xFF;
 		// Setup Universe Config Space
 		// This is a 4k wide memory area that need to be mapped into the kernel
 		// virtual memory space so we can access it.
 		pci_write_config_dword(universe_driver.pci_dev, PCI_BS, CONFIG_REG_SPACE);
 		pci_read_config_dword(universe_driver.pci_dev, PCI_BS, &ba);				
-		universe_driver.baseaddr = (char *)ioremap(ba, CONFIG_SPACE_SIZE);
+		universe_driver.baseaddr = (void *)ioremap(ba, CONFIG_SPACE_SIZE);
 		if (!universe_driver.baseaddr) {
 			printk(KERN_WARNING "vremap failed to map Universe to Kernel Space.\r");
 			return -ENOMEM;
@@ -365,14 +367,21 @@ universe_init_module(void)
 		iowrite32(0x00000000,universe_driver.baseaddr + LINT_EN);	 
 		// Clear Any Pending Interrupts
 		iowrite32(0x0000FFFF,universe_driver.baseaddr + LINT_STAT); 
-
-		/*result = request_irq(irq, irq_handler, IRQF_DISABLED, "VMEBus (universe)", NULL);
+		// Grabbing the interrupt request
+		universe_driver.irq = universe_driver.pci_dev->irq;
+		result = request_irq(universe_driver.irq, universe_irq_handler, SA_INTERRUPT, "VMEBus (universe)", &universe_driver);
 		if (result) {
-			printk(KERN_WARNING "universe: can't get assigned pci irq vector %02X\n", irq);
+			printk(KERN_ERR "universe: can't get assigned irq %02X\n", universe_driver.irq);
+			universe_exit_module();
+			return -EBUSY;
 		} else {
-			iowrite32(0x0000, universe_driver.baseaddr+LINT_MAP0);  // Map all ints to 0
-			iowrite32(0x0000, universe_driver.baseaddr+LINT_MAP1);  // Map all ints to 0
-		}*/
+			iowrite32(0x00000000, universe_driver.baseaddr+LINT_MAP0);  
+			iowrite32(0x00000000, universe_driver.baseaddr+LINT_MAP1);  
+			iowrite32((universe_driver.irq & 0x7), universe_driver.baseaddr+LINT_MAP1);  
+			// Enabling DMA interrupts
+			iowrite32(0x00000100,universe_driver.baseaddr + LINT_EN);	 
+			printk(KERN_INFO "universe: Assigned irq %02X\n", universe_driver.irq);
+		}
 
 	} else {
 		// We didn't find the universe device, so get out. 
