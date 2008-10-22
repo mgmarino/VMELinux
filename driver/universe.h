@@ -104,24 +104,31 @@ typedef struct
 #endif
 
 #define CONFIG_REG_SPACE       0xA0000000
+#define CONFIG_SPACE_SIZE      0x1000
 
 #define PCI_SIZE_8             0x0001
 #define PCI_SIZE_16            0x0002
 #define PCI_SIZE_32            0x0003
 
-#define IOCTL_SET_CTL          0xF001
-#define IOCTL_SET_BS           0xF002
-#define IOCTL_SET_BD           0xF003
-#define IOCTL_SET_VME          0xF004
-#define IOCTL_PCI_SIZE         0xF005
-#define IOCTL_SET_WINT         0xF007    // Wait for interrupt before read
-#define IOCTL_SET_IOREMAP      0xF008    // Set perform ioremap 
-#define IOCTL_SET_HW_BYTESWAP  0xF009 
-#define IOCTL_GET_MEM_SIZE     0xF00A 
+// Defining IOCTL calls
+// We are adding ioctl numbers to the kernel
+// so we obey linux convention.
+#define UNIVERSE_MAGIC_NUMBER  0xF1
 
-#define IOCTL_MASTER_BYTESWAP  0x8
-#define IOCTL_SLAVE_BYTESWAP   0x10
-#define IOCTL_FAST_BYTESWAP    0x20
+#define UNIVERSE_IOCSET_CTL          _IO(UNIVERSE_MAGIC_NUMBER, 1)
+#define UNIVERSE_IOCSET_BS           _IO(UNIVERSE_MAGIC_NUMBER, 2)
+#define UNIVERSE_IOCSET_BD           _IO(UNIVERSE_MAGIC_NUMBER, 3)
+#define UNIVERSE_IOCSET_VME          _IO(UNIVERSE_MAGIC_NUMBER, 4)
+#define UNIVERSE_IOCPCI_SIZE         _IO(UNIVERSE_MAGIC_NUMBER, 5)
+#define UNIVERSE_IOCSET_IOREMAP      _IO(UNIVERSE_MAGIC_NUMBER, 6)
+#define UNIVERSE_IOCSET_HW_BYTESWAP  _IO(UNIVERSE_MAGIC_NUMBER, 7)
+#define UNIVERSE_IOCGET_MEM_SIZE     _IOR(UNIVERSE_MAGIC_NUMBER, 8, unsigned long)
+#define UNIVERSE_IOC_MAXNR      8
+
+// Byte-swapping arguments for SET_HW_BYTESWAP 
+#define UNIVERSE_IOCMASTER_BYTESWAP  0x8
+#define UNIVERSE_IOCSLAVE_BYTESWAP   0x10
+#define UNIVERSE_IOCFAST_BYTESWAP    0x20
 
 #define PCI_ID                 0x0000
 #define PCI_CSR                0x0004
