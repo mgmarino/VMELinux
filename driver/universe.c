@@ -151,6 +151,7 @@ static void	universe_vma_close(struct vm_area_struct *);
 
 static int	universe_check_bus_error(void);
 static void 	universe_dma_timeout(unsigned long);
+static irqreturn_t universe_irq_handler(int irq, void *dev_id);
 
 #ifdef UNIVERSE_DEBUG
 static int	universe_procinfo(char *, char **, off_t, int, int *,void *);
@@ -369,7 +370,7 @@ universe_init_module(void)
 		iowrite32(0x0000FFFF,universe_driver.baseaddr + LINT_STAT); 
 		// Grabbing the interrupt request
 		universe_driver.irq = universe_driver.pci_dev->irq;
-		result = request_irq(universe_driver.irq, universe_irq_handler, SA_INTERRUPT, "VMEBus (universe)", &universe_driver);
+		result = request_irq(universe_driver.irq, universe_irq_handler, IRQF_DISABLED, "VMEBus (universe)", &universe_driver);
 		if (result) {
 			printk(KERN_ERR "universe: can't get assigned irq %02X\n", universe_driver.irq);
 			universe_exit_module();
@@ -1044,7 +1045,7 @@ static int universe_check_bus_error(void)
 //		This is a *fast* interrupt handler, that is interrupts are
 //		disabled while this is running. 
 //----------------------------------------------------------------------------
-static irqreturn_t universe_irq_handler(int irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t universe_irq_handler(int irq, void *dev_id)
 {
 	long stat;
 	spin_lock(&universe_driver.dma.lock);	
@@ -1072,7 +1073,7 @@ static irqreturn_t universe_irq_handler(int irq, void *dev_id, struct pt_regs *r
 	return IRQ_HANDLED;
 }
 //----------------------------------------------------------------------------
-//	universe_irq_handler()
+//	universe_dma_timeout()
 //		This functions is called when the dma timer runs out.  
 //		It checks to see if the dma is still running: If so, reset timer, return;
 //		If not call universe_irq_handler
@@ -1098,5 +1099,5 @@ static void universe_dma_timeout(unsigned long notused)
 	/* OK, the dma isn't running, we must have missed an interrupt. */
 	/* Call the interrupt handler. */
 	spin_unlock_irqrestore(&universe_driver.dma.lock, flags);
-	universe_irq_handler(universe_driver.irq, NULL, NULL);
+	universe_irq_handler(universe_driver.irq, NULL);
 }
