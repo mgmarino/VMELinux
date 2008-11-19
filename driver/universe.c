@@ -287,7 +287,7 @@ universe_exit_module(void)
 	// Remove registration of char drivers.
 	unregister_chrdev_region(dev_number, universe_nr_devs);
 #ifdef UNIVERSE_DEBUG
-	printk( KERN_INFO UNIVERSE_PREFIX "Released char driver region.\n");
+	printk( KERN_DEBUG UNIVERSE_PREFIX "Released char driver region.\n");
 #endif
 	// ---------------------------------------------------------
 }
@@ -566,7 +566,7 @@ static int universe_release(struct inode *inode,struct file *file)
 	struct universe_dev *dev = file->private_data; 
 #ifdef UNIVERSE_DEBUG
 	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);	
-	printk( KERN_INFO UNIVERSE_PREFIX "Closing universe file: %d\n", minor);
+	printk( KERN_DEBUG UNIVERSE_PREFIX "Closing universe file: %d\n", minor);
 #endif
 
 	dev->ok_to_write = 0;
@@ -579,7 +579,7 @@ static int universe_release(struct inode *inode,struct file *file)
 	if (dev->image_ba) {
 		/* Get rid of the ioremapped memory. */
 #ifdef UNIVERSE_DEBUG
-		printk( KERN_INFO UNIVERSE_PREFIX "Unmapping file: %d, at address: 0x%lx\n", minor, (unsigned long) dev->image_ba);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "Unmapping file: %d, at address: 0x%lx\n", minor, (unsigned long) dev->image_ba);
 #endif
 		iounmap(dev->image_ba);
 		dev->image_ba = 0;
@@ -631,7 +631,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 
 	universe_driver.reads++;
 #ifdef UNIVERSE_DEBUG
-	//printk( KERN_INFO UNIVERSE_PREFIX "Initiating a read.\n");
+	printk( KERN_DEBUG UNIVERSE_PREFIX "Initiating a read.\n");
 #endif
 	if (minor == CONTROL_MINOR) {
 		v = ioread32(universe_driver.baseaddr + (unsigned int)dev->image_ptr);		
@@ -642,7 +642,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 	if (minor != DMA_MINOR) goto readout_minor;
 
 #ifdef UNIVERSE_DEBUG
-	printk( KERN_INFO UNIVERSE_PREFIX "DMA Transfer requested. \n");
+	printk( KERN_DEBUG UNIVERSE_PREFIX "DMA Transfer requested. \n");
 #endif
 	// Check the semaphore_lock
 	if (down_interruptible(&dev->sem)) {
@@ -743,7 +743,7 @@ readout_minor:
 		// will exit immediately following a BERR.  We always check if there
 		// was an error on the bus.
 #ifdef UNIVERSE_DEBUG
-		//printk( KERN_INFO UNIVERSE_PREFIX "Reading from: 0x%lx\n", (unsigned long) dev->image_ptr);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "Reading from: 0x%lx\n", (unsigned long) dev->image_ptr);
 #endif
 		while( numt >= sizeof(u32) ) {
 			// long copy  
@@ -885,7 +885,7 @@ write_minor:
 		if(copy_from_user(dev->buffer, buf, numt)) return -EFAULT;
 		done_writing = 0;	
 #ifdef UNIVERSE_DEBUG
-		printk( KERN_INFO UNIVERSE_PREFIX "Writing to: 0x%lx\n", (unsigned long) dev->image_ptr);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "Writing to: 0x%lx\n", (unsigned long) dev->image_ptr);
 #endif
 		while( numt >= sizeof(u32) ) {
 			// long copy
@@ -975,12 +975,12 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 		} else {
 			arg &= 0xFFFFFFFE; // *always* use memory space, not i/o 
 #ifdef UNIVERSE_DEBUG
-			printk( KERN_INFO UNIVERSE_PREFIX "Writing 0x%lx at 0x%lx\n", arg, (unsigned long) universe_driver.baseaddr + dev->ctl_address );
+			printk( KERN_DEBUG UNIVERSE_PREFIX "Writing 0x%lx at 0x%lx\n", arg, (unsigned long) universe_driver.baseaddr + dev->ctl_address );
 #endif
 			iowrite32(arg,universe_driver.baseaddr + dev->ctl_address);
 			arg = ioread32(universe_driver.baseaddr + dev->ctl_address);
 #ifdef UNIVERSE_DEBUG
-			printk( KERN_INFO UNIVERSE_PREFIX "Readback: 0x%lx\n", arg);
+			printk( KERN_DEBUG UNIVERSE_PREFIX "Readback: 0x%lx\n", arg);
 #endif
 		}
 		break;
@@ -992,35 +992,35 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 			return -EFAULT;
 		}
 #ifdef UNIVERSE_DEBUG
-		printk( KERN_INFO UNIVERSE_PREFIX "Setting BS: 0x%lx\n", (unsigned long)(arg + reserve_from_address));
+		printk( KERN_DEBUG UNIVERSE_PREFIX "Setting BS: 0x%lx\n", (unsigned long)(arg + reserve_from_address));
 #endif
 		iowrite32(arg+reserve_from_address,universe_driver.baseaddr+dev->bs_address);
 		arg = ioread32(universe_driver.baseaddr+dev->bs_address);
 #ifdef UNIVERSE_DEBUG
-		printk( KERN_INFO UNIVERSE_PREFIX "Readback: 0x%lx\n", arg);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "Readback: 0x%lx\n", arg);
 #endif
 		break;
 
 	case UNIVERSE_IOCSET_BD:
 		if (minor == CONTROL_MINOR || minor == DMA_MINOR) return -EPERM;
 #ifdef UNIVERSE_DEBUG
-		printk( KERN_INFO UNIVERSE_PREFIX "reading at: 0x%lx\n", (unsigned long)(universe_driver.baseaddr + dev->bs_address));
+		printk( KERN_DEBUG UNIVERSE_PREFIX "reading at: 0x%lx\n", (unsigned long)(universe_driver.baseaddr + dev->bs_address));
 #endif
 		bs = ioread32(universe_driver.baseaddr + dev->bs_address);
 #ifdef UNIVERSE_DEBUG
-		printk( KERN_INFO UNIVERSE_PREFIX "bs read in as: 0x%lx\n", bs);
-		printk( KERN_INFO UNIVERSE_PREFIX "arg read in as: 0x%lx\n", arg);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "bs read in as: 0x%lx\n", bs);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "arg read in as: 0x%lx\n", arg);
 #endif
 		if (arg+bs < size_to_reserve+reserve_from_address) {
 			/* we want to make sure that the bound doesn't overshoot our reserved memory. */
 			
 #ifdef UNIVERSE_DEBUG
-			printk( KERN_INFO UNIVERSE_PREFIX "Writing 0x%lx at 0x%lx\n", arg+bs, (unsigned long) universe_driver.baseaddr + dev->bd_address );
+			printk( KERN_DEBUG UNIVERSE_PREFIX "Writing 0x%lx at 0x%lx\n", arg+bs, (unsigned long) universe_driver.baseaddr + dev->bd_address );
 #endif
 			iowrite32(arg+bs,universe_driver.baseaddr+dev->bd_address);
 			if (dev->image_ba) {
 #ifdef UNIVERSE_DEBUG
-				printk( KERN_INFO UNIVERSE_PREFIX "Unmapping minor: %d\n", minor);
+				printk( KERN_DEBUG UNIVERSE_PREFIX "Unmapping minor: %d\n", minor);
 #endif
 				iounmap(dev->image_ba);
 				dev->image_ba = 0;
@@ -1031,11 +1031,11 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 			if (dev->image_perform_ioremap == 1) {
 				sizetomap = arg; 
 #ifdef UNIVERSE_DEBUG
-				printk( KERN_INFO UNIVERSE_PREFIX "Mapping minor: %d\n", minor);
+				printk( KERN_DEBUG UNIVERSE_PREFIX "Mapping minor: %d\n", minor);
 #endif
 				dev->image_ba = (char *)ioremap(bs, sizetomap);
 #ifdef UNIVERSE_DEBUG
-				printk( KERN_INFO UNIVERSE_PREFIX "Mapping minor to: 0x%lx, at 0x%lx\n", (unsigned long) dev->image_ba, bs);
+				printk( KERN_DEBUG UNIVERSE_PREFIX "Mapping minor to: 0x%lx, at 0x%lx\n", (unsigned long) dev->image_ba, bs);
 #endif
 				if (!dev->image_ba) {
 					dev->ok_to_write = 0;		 
@@ -1067,7 +1067,7 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 			iowrite32(arg-bs,universe_driver.baseaddr + dev->to_address);
 			arg = ioread32(universe_driver.baseaddr + dev->to_address);
 #ifdef UNIVERSE_DEBUG
-			printk( KERN_INFO UNIVERSE_PREFIX "Readback VME to address: 0x%lx\n", arg);
+			printk( KERN_DEBUG UNIVERSE_PREFIX "Readback VME to address: 0x%lx\n", arg);
 #endif
 		}
 		break;	
@@ -1137,8 +1137,10 @@ static int universe_mmap(struct file *file,struct vm_area_struct *vma)
 	/* The cpu CANNOT cache these pages.  Also, this will keep a core dump from reading this mem. */
 	vma->vm_flags |= VM_IO;
 	/* OK, now remap. */
-	printk(KERN_INFO UNIVERSE_PREFIX "  Mapping physical address (0x%lx), size (0x%lx) to user space", 
+#ifdef UNIVERSE_DEBUG
+	printk(KERN_DEBUG UNIVERSE_PREFIX "  Mapping physical address (0x%lx), size (0x%lx) to user space", 
 		physical_address, virtual_size);
+#endif
 	if (remap_pfn_range( 	vma, 
 				vma->vm_start, 
 				physical_address >> PAGE_SHIFT, 
@@ -1187,13 +1189,13 @@ static int universe_check_bus_error(void)
 {
 	unsigned long tmp = ioread32(universe_driver.baseaddr + PCI_CSR);
 #ifdef UNIVERSE_DEBUG
-	//printk( KERN_INFO UNIVERSE_PREFIX "Bus error: 0x%lx\n", tmp);
+	printk( KERN_DEBUG UNIVERSE_PREFIX "Bus error: 0x%lx\n", tmp);
 #endif
 	if (tmp & 0x08000000) {	// S_TA is Set
 		iowrite32(tmp, universe_driver.baseaddr + PCI_CSR);
 		tmp = ioread32(universe_driver.baseaddr + PCI_CSR);
 #ifdef UNIVERSE_DEBUG
-		//printk( KERN_INFO UNIVERSE_PREFIX "Readback: 0x%lx\n", tmp);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "Readback: 0x%lx\n", tmp);
 #endif
 		return -EIO ;
 	}
@@ -1218,7 +1220,7 @@ static irqreturn_t universe_irq_handler(int irq, void *dev_id)
 	if (! (stat & 0x100) ) return IRQ_NONE;
 
 #ifdef UNIVERSE_DEBUG
-	printk( KERN_INFO UNIVERSE_PREFIX "In the universe interrupt.\n");
+	printk( KERN_DEBUG UNIVERSE_PREFIX "In the universe interrupt.\n");
 #endif
 	spin_lock(&universe_driver.dma.lock);	
 	/* Once we obtain the lock, let us check again.  Another interrupt may have handled it. */
@@ -1269,7 +1271,7 @@ static void universe_dma_timeout(unsigned long notused)
 	spin_lock(&universe_driver.dma.lock);
 	universe_driver.dma.timeouts++;
 #ifdef UNIVERSE_DEBUG
-	printk( KERN_INFO UNIVERSE_PREFIX "Timeout.\n");
+	printk( KERN_DEBUG UNIVERSE_PREFIX "Timeout.\n");
 #endif
         val = ioread32(universe_driver.baseaddr+DGCS);
 	if (val & 0x00008000) {
@@ -1281,7 +1283,7 @@ static void universe_dma_timeout(unsigned long notused)
 	}
 	/* OK, the dma isn't running, we must have missed an interrupt. */
 #ifdef UNIVERSE_DEBUG
-	printk( KERN_INFO UNIVERSE_PREFIX "In the timeout.\n");
+	printk( KERN_DEBUG UNIVERSE_PREFIX "In the timeout.\n");
 #endif
 	/* Call the interrupt handler. */
 	spin_unlock(&universe_driver.dma.lock);
