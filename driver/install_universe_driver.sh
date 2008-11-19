@@ -10,7 +10,7 @@ kernel=$version
 # Available options:
 #   sizeToReserve=(Give the size of pci space to reserve)
 #   reserveFromAddress=(Give starting pci address from which to reserve.)
-/sbin/insmod -f /lib/modules/$kernel/kernel/drivers/vme/$module.ko $* || exit 1
+/sbin/insmod /lib/modules/$kernel/kernel/drivers/vme/$module.ko $* || exit 1
 
 
 # remove stale nodes
@@ -47,4 +47,4 @@ chmod $mode /dev/${device}dma
 #chmod 600 /dev/${device}m3
 #chmod 600 /dev/${device}m7
 
-printf "%s driver installation complete." $module
+printf "%s driver installation complete.\n" $module

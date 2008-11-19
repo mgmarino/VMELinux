@@ -11,10 +11,11 @@ if [ "${?}" != 0 ]; then
   printf "Exiting.\n"
   exit 1
 fi 
-/sbin/rmmod  $module || exit $?
-
 # remove stale nodes
 rm -f /dev/${device}m[0-8]
 rm -f /dev/${device}ctl
 rm -f /dev/${device}dma
+
+/sbin/rmmod  $module || exit $?
+
 
