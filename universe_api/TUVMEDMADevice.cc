@@ -81,8 +81,9 @@ int TUVMEDMADevice::Enable()
   ctlRegister |= (fUseBLTs) ? DMA_VCT_USE_BLT : DMA_VCT_NO_BLT;
   
   if (fUseNoIncrement) ctlRegister |= DMA_NO_INCREMENT;
-  if ( ioctl(fFileNum, IOCTL_SET_CTL, ctlRegister) < 0 ) return -1;  
-  if ( ioctl(fFileNum, IOCTL_SET_VME, fVMEAddress) < 0 ) return -1; 
+  if ( ioctl(fFileNum, UNIVERSE_IOCSET_CTL
+			  , ctlRegister) < 0 ) return -1;  
+  if ( ioctl(fFileNum, UNIVERSE_IOCSET_VME, fVMEAddress) < 0 ) return -1; 
   return 0;
 
 }

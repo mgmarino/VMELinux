@@ -201,7 +201,7 @@ uint32_t get_max_size_of_image()
   return gUniverseDevMgr.GetSizePerImage();
 }
 
-void set_ds_negation_speed(uint32_t speed)
+/*void set_ds_negation_speed(uint32_t speed)
 {
   dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice())->SetDSNegationSpeed((TUVMEControlDevice::ECycleSpeeds)speed);
 }
@@ -209,7 +209,7 @@ void set_ds_negation_speed(uint32_t speed)
 void set_ds_high_time_blts(uint32_t speed)
 {
   dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice())->SetDSHighTimeBLTs((TUVMEControlDevice::ECycleSpeeds)speed);
-}
+}*/
 
 void lock_device(TUVMEDevice* dev)
 {

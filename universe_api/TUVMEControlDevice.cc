@@ -29,14 +29,14 @@ int TUVMEControlDevice::Open()
 void TUVMEControlDevice::SetHWByteSwap(bool doByteSwap)
 {
   if (!fIsOpen) return;
-  ioctl(fFileNum, IOCTL_SET_HW_BYTESWAP, ((doByteSwap) ? IOCTL_MASTER_BYTESWAP : 0));  
+  ioctl(fFileNum, UNIVERSE_IOCSET_HW_BYTESWAP, ((doByteSwap) ? UNIVERSE_IOCMASTER_BYTESWAP : 0));  
 }
 
 size_t TUVMEControlDevice::GetPCIMemorySize()
 {
   if (!fIsOpen) return 0;
   uint32_t argument = 0;
-  if (ioctl(fFileNum, IOCTL_GET_MEM_SIZE, (uint32_t)&argument) < 0) return 0;
+  if (ioctl(fFileNum, UNIVERSE_IOCGET_MEM_SIZE, (uint32_t)&argument) < 0) return 0;
   return (size_t)argument;
 }
 

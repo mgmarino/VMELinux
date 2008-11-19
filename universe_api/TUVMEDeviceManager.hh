@@ -78,7 +78,7 @@ extern void set_hw_byte_swap(bool doSwap);
   /* Sets byte swap in the hardware.  This only works on the VX 40x/04x cpu boards and has undefined behavior for other boards. */
 extern uint32_t get_max_size_of_image(void);
   /* Returns the maximum size of an image. */
-extern void set_ds_negation_speed(uint32_t speed);
+//extern void set_ds_negation_speed(uint32_t speed);
   /* Sets the ds negation speed during a read cycle. 
    * speed:  0 - normal 
    *         1 - faster 
@@ -86,7 +86,7 @@ extern void set_ds_negation_speed(uint32_t speed);
    *
    * Usage of this in a non-normal state could violate the VME64 standard. 
    * However, it is also possible to speed up bus cycles. */
-extern void set_ds_high_time_blts(uint32_t speed);
+//extern void set_ds_high_time_blts(uint32_t speed);
   /* Sets the ds high time during a block transfer. 
    * speed:  0 - normal 
    *         1 - faster 

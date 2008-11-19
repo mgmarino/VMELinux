@@ -143,18 +143,18 @@ int TUVMEDevice::Enable()
   /* Now enable the channel. */
   ctlRegister |= 0x80000000;
 
-  if ( ioctl(fFileNum, IOCTL_SET_CTL, ctlRegister) < 0 ) return -1;  
-  if ( ioctl(fFileNum, IOCTL_SET_IOREMAP, ((fUseIORemap) ? 1 : 0)) < 0 ) return -1;  
-  if ( ioctl(fFileNum, IOCTL_SET_BS, fPCIOffset) < 0 ) return -1; 
-  if ( ioctl(fFileNum, IOCTL_SET_BD, fSizeOfImage) < 0 ) return -1; 
-  if ( ioctl(fFileNum, IOCTL_SET_VME, fVMEAddress) < 0 ) return -1; 
+  if ( ioctl(fFileNum, UNIVERSE_IOCSET_CTL, ctlRegister) < 0 ) return -1;  
+  if ( ioctl(fFileNum, UNIVERSE_IOCSET_IOREMAP, ((fUseIORemap) ? 1 : 0)) < 0 ) return -1;  
+  if ( ioctl(fFileNum, UNIVERSE_IOCSET_BS, fPCIOffset) < 0 ) return -1; 
+  if ( ioctl(fFileNum, UNIVERSE_IOCSET_BD, fSizeOfImage) < 0 ) return -1; 
+  if ( ioctl(fFileNum, UNIVERSE_IOCSET_VME, fVMEAddress) < 0 ) return -1; 
   return 0;
 }
 
 void TUVMEDevice::SetVMEAddress(uint32_t vmeAddress) 
 {
   fVMEAddress = vmeAddress; 
-  if (fIsOpen) ioctl(fFileNum, IOCTL_SET_VME, fVMEAddress);
+  if (fIsOpen) ioctl(fFileNum, UNIVERSE_IOCSET_VME, fVMEAddress);
 }
 void TUVMEDevice::Close() 
 {
