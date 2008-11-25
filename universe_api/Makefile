@@ -5,8 +5,8 @@ OBJECTS = $(SOURCES:.cc=.o)
 HEADERS = $(wildcard *.hh)
 INSTALLDIR = /usr/local/universe
 
-FLAGS = -O2 -Wall -I../driver
-#FLAGS = -g -Wall -I../driver
+#FLAGS = -O2 -Wall -I../driver
+FLAGS = -g -Wall -I../driver
 
 LIB = libuniverse_api.a
 

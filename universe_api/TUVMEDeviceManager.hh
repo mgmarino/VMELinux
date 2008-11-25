@@ -21,7 +21,8 @@ class TUVMEDeviceManager {
 
     TUVMEDevice* GetDevice(uint32_t vmeAddress, 
       uint32_t addressModifier, uint32_t dataWidth, uint32_t sizeOfImage = 0);
-    TUVMEDevice* GetControlDevice() {return &fControlDevice;}
+    TUVMEDevice* GetControlDevice() 
+      {return (fControlDeviceIsOpen) ? &fControlDevice : NULL;}
 
     /* DMA read device. */
     TUVMEDevice* GetDMADevice(uint32_t vmeAddress, 
@@ -37,6 +38,8 @@ class TUVMEDeviceManager {
       {fUsePostedWrites = usePostedWrites;}
   protected:
     bool fUsePostedWrites;
+    bool fControlDeviceIsOpen;
+    bool fDMADeviceIsOpen;
 
     std::set<TUVMEDevice*> fAllDevices; 
     std::set<uint32_t> fDevicesRemaining;

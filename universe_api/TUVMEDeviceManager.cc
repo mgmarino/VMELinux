@@ -7,9 +7,12 @@ TUVMEDeviceManager::TUVMEDeviceManager()
   }
   fUsePostedWrites = false;
   if (fControlDevice.Open() < 0) {
-    /* Error*/
+    /* Error, also clear out the available devices. */
+    fControlDeviceIsOpen = false;
+    fDevicesRemaining.clear();
   } else {
     /* Setup device. */
+    fControlDeviceIsOpen = true;
     uint32_t buffer = 0;
     if (fControlDevice.Read((char*)&buffer, sizeof(uint32_t), PCI_CSR)==sizeof(uint32_t)) {
       /* This sets the Bus Master bit in the PCI_CSR register of the Universe II. 
@@ -19,9 +22,12 @@ TUVMEDeviceManager::TUVMEDeviceManager()
     }
   }
   if (fDMADevice.Open() < 0) {
-    /* Error */
+    /* Error, also clear out the available devices. */
+    fDMADeviceIsOpen = false;
+    fDevicesRemaining.clear();
   } else {
     /* Setup device. */
+    fDMADeviceIsOpen = true;
   }
   fSizePerImage = fControlDevice.GetPCIMemorySize()/TUVMEDevice::kNumberOfDevices;
 
@@ -147,6 +153,7 @@ TUVMEDevice* TUVMEDeviceManager::GetDMADevice(uint32_t vmeAddress,
   uint32_t addressModifier, uint32_t dataWidth, bool autoIncrement)
 {
   /* We have to setup the DMA device. */
+  if (!fDMADeviceIsOpen) return NULL;
   fDMADevice.LockDevice();
   fDMADevice.SetWithAddressModifier(addressModifier);
   fDMADevice.SetDataWidth((TUVMEDevice::ETUVMEDeviceDataWidth)dataWidth);
@@ -193,7 +200,8 @@ TUVMEDevice* get_ctl_device()
 
 void set_hw_byte_swap(bool doSwap)
 {
-  dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice())->SetHWByteSwap(doSwap);
+  TUVMEControlDevice* dev = dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice());
+  if (dev) dev->SetHWByteSwap(doSwap);
 }
 
 uint32_t get_max_size_of_image()
