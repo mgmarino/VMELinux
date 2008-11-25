@@ -426,7 +426,7 @@ universe_init_module(void)
 	// Finding a large chunk of memory defined with the inputs
 	if (request_mem_region(reserve_from_address, size_to_reserve, "universe") == NULL) {
 		/* Failed to get memory. */
-		printk(	KERN_WARNING UNIVERSE_PREFIX " Error reserving memory from 0x%lx to 0x%lx", 
+		printk(	KERN_WARNING UNIVERSE_PREFIX " Error reserving memory from 0x%lx to 0x%lx\n", 
 			reserve_from_address, reserve_from_address + size_to_reserve - 1);
 		result = -EBUSY;
 		goto err_free_irq;
@@ -716,7 +716,9 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 	// OK, so we waited and it apparently completed.  Check for errors.
 	val = ioread32(universe_driver.baseaddr+DGCS);
 	if (!(val & 0x00000800)) {
+#ifdef UNIVERSE_DEBUG
 		printk(KERN_WARNING UNIVERSE_PREFIX "Requested DMA read transfer failed.\n");
+#endif
 		up(&dev->sem);
 		return 0;
 	}
@@ -862,7 +864,9 @@ static ssize_t universe_write(struct file *file, const char *buf, size_t count, 
 	}
 	val = ioread32(universe_driver.baseaddr+DGCS);
 	if (!(val & 0x00000800)) {
+#ifdef UNIVERSE_DEBUG
 		printk(KERN_ERR UNIVERSE_PREFIX "Requested DMA write transfer failed.\n");
+#endif
 		up(&dev->sem);
 		return 0;
 	}
@@ -1084,7 +1088,7 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 		readBack = (0x38 & arg);
 		outb(readBack, VX407_CSR0);	
 		if ((0x38 & arg) != (readBack = (0x38 & inb(VX407_CSR0)))) { 
-			printk(	KERN_WARNING UNIVERSE_PREFIX " Hardware swap not set at address 0x%x. Set: 0x%x, Readback: 0x%x", 
+			printk(	KERN_WARNING UNIVERSE_PREFIX " Hardware swap not set at address 0x%x. Set: 0x%x, Readback: 0x%x\n", 
 				VX407_CSR0, (unsigned int)(0x38 & arg), readBack);
 			return -EIO;
 		}
@@ -1122,13 +1126,13 @@ static int universe_mmap(struct file *file,struct vm_area_struct *vma)
 
 	if ((bd - bs) < offset) {
 		/* offset is too large! */
-		printk(KERN_WARNING UNIVERSE_PREFIX "  mmap failure:offset (0x%lx) is too large.", offset);
+		printk(KERN_WARNING UNIVERSE_PREFIX "  mmap failure:offset (0x%lx) is too large.\n", offset);
 		return -EFAULT;
 	}
 	physical_size = (bd - bs) - offset;	
 	if (virtual_size > physical_size) {
 		/* Range spans too much */
-		printk(KERN_WARNING UNIVERSE_PREFIX "  mmap failure:range (0x%lx) spans too much.", virtual_size);
+		printk(KERN_WARNING UNIVERSE_PREFIX "  mmap failure:range (0x%lx) spans too much.\n", virtual_size);
 		return -EINVAL;
 	}
 
@@ -1138,7 +1142,7 @@ static int universe_mmap(struct file *file,struct vm_area_struct *vma)
 	vma->vm_flags |= VM_IO;
 	/* OK, now remap. */
 #ifdef UNIVERSE_DEBUG
-	printk(KERN_DEBUG UNIVERSE_PREFIX "  Mapping physical address (0x%lx), size (0x%lx) to user space", 
+	printk(KERN_DEBUG UNIVERSE_PREFIX "  Mapping physical address (0x%lx), size (0x%lx) to user space\n", 
 		physical_address, virtual_size);
 #endif
 	if (remap_pfn_range( 	vma, 
