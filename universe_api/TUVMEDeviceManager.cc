@@ -132,20 +132,24 @@ int32_t TUVMEDeviceManager::CloseDevice(TUVMEDevice* device)
 {
   /* First make sure it exists in here. */
   pthread_rwlock_rdlock( &fReadWriteLock );
+
   if (fAllDevices.find(device) == fAllDevices.end()) {
     /* Doesn't exist?  This is odd, some dev file is not being 
      * handled by the manager.*/
     pthread_rwlock_unlock( &fReadWriteLock );
     return -1;
   }
+
   pthread_rwlock_unlock( &fReadWriteLock );
   pthread_rwlock_wrlock( &fReadWriteLock );
+
+  /* Return it to the available pool. */
   fAllDevices.erase(device);
   fDevicesRemaining.insert(device->GetDevNumber());
-  /* Return it to the available pool. */
+  delete device;
+
   pthread_rwlock_unlock( &fReadWriteLock );
 
-  delete device;
   return 0;
 }
 
