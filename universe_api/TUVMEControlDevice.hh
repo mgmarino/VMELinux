@@ -24,6 +24,8 @@ class TUVMEControlDevice: public TUVMEDevice {
     virtual int Enable() {return 0;} 
     virtual int Open();
 
+    int ReadIOPortMemory( uint16_t address );
+    int WriteIOPortMemory( uint16_t address, uint8_t value );
     void SetHWByteSwap(bool doByteSwap = true);
     void SetDSNegationSpeed(ECycleSpeeds speed = kNormal);
     void SetDSHighTimeBLTs(ECycleSpeeds speed = kNormal);

@@ -2,6 +2,7 @@
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
+#include "ConcurrentVX40x.h"
 
 TUVMEControlDevice::TUVMEControlDevice(): TUVMEDevice((uint32_t)-1)
 {
@@ -28,8 +29,17 @@ int TUVMEControlDevice::Open()
 
 void TUVMEControlDevice::SetHWByteSwap(bool doByteSwap)
 {
-  if (!fIsOpen) return;
-  ioctl(fFileNum, UNIVERSE_IOCSET_HW_BYTESWAP, ((doByteSwap) ? UNIVERSE_IOCMASTER_BYTESWAP : 0));  
+  /* Currently, we only support the Concurrent board 
+   * with this functionality.                        */
+  if ( GetBoardType() != kCCT ) return;
+  uint8_t value = ReadIOPortMemory( CONCURRENT_VX_CSR0 );
+  /* First make sure the bits are cleared. */
+  value &= ~ ( CONCURRENT_HW_BYTE_SWAP_MASTER | 
+               CONCURRENT_HW_BYTE_SWAP_SLAVE  |
+	       CONCURRENT_HW_BYTE_SWAP_FAST );
+  /* Now set them. */
+  value |= CONCURRENT_HW_BYTE_SWAP_MASTER;
+  WriteIOPortMemory( CONCURRENT_VX_CSR0, value );
 }
 
 size_t TUVMEControlDevice::GetPCIMemorySize()
@@ -93,4 +103,24 @@ TUVMEControlDevice::EBoardType TUVMEControlDevice::GetBoardType()
   if (ioctl(fFileNum, UNIVERSE_IOCGET_BOARD_TYPE, (uint32_t)&argument) < 0) return kUnknown;
   return (EBoardType)argument;
  
+}
+
+int TUVMEControlDevice::ReadIOPortMemory(uint16_t address)
+{
+  if (!fIsOpen) return -1;
+  struct universe_ioport_ioctl tempStruct;
+  tempStruct.address = address;
+  if ( ioctl(fFileNum, UNIVERSE_IOCIO_PORT_READ, (uint32_t)&tempStruct) < 0 ) return -1;
+  return tempStruct.value;
+}
+
+int TUVMEControlDevice::WriteIOPortMemory(uint16_t address, uint8_t value)
+{
+  if (!fIsOpen) return -1;
+  struct universe_ioport_ioctl tempStruct;
+  tempStruct.address = address;
+  tempStruct.value = value;
+  if ( ioctl(fFileNum, UNIVERSE_IOCIO_PORT_WRITE, (uint32_t)&tempStruct) < 0 ) return -1;
+  return 0;
+
 }
