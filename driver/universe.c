@@ -61,6 +61,7 @@ static char Version[] = "2.0.b1 2008Nov05";
 #include <asm/io.h>
 #include <asm/atomic.h>
 #include "universe.h"
+#include "ConcurrentVX40x.h"
 
 //----------------------------------------------------------------------------
 // Module parameters 
@@ -89,8 +90,6 @@ MODULE_LICENSE("GPL");
 #ifndef PCI_DEVICE_ID_TUNDRA_CA91C042
 	#define PCI_DEVICE_ID_TUNDRA_CA91C042 0x0000
 #endif
-
-#define VX407_CSR0	 0x210
 
 #define UNIVERSE_PREFIX  "universe: "
 
@@ -158,6 +157,7 @@ static void	universe_setup_universe_dev(struct universe_dev *, int index);
 static int	universe_check_bus_error(void);
 static void 	universe_dma_timeout(unsigned long);
 static irqreturn_t universe_irq_handler(int irq, void *dev_id);
+static int	universe_ioport_default_permissions(uint16_t);
 
 //----------------------------------------------------------------------------
 // Static variables 
@@ -203,6 +203,9 @@ static int universe_major	= 0;
 static int universe_minor	= 0;
 static int universe_nr_devs 	= MAX_MINOR + 1;
 static struct universe_dev universe_devices[MAX_MINOR + 1];
+static int universe_board_type  = UNIVERSE_BOARD_TYPE_UNKNOWN;
+ 
+static int (*universe_ioport_permissions)(uint16_t portnumber) = NULL;
 
 
 //-----------------------------------------------------------------------------
@@ -323,7 +326,7 @@ universe_init_module(void)
 
 	// zero out the driver struct
 	memset(&universe_driver, 0, sizeof(universe_driver));
-	 
+
 	// ---------------------------------------------------------
 	// Searching for the device and setting up.
 	if (!(universe_driver.pci_dev = pci_get_device(	PCI_VENDOR_ID_TUNDRA,
@@ -459,6 +462,16 @@ module_init(universe_init_module);
 
 //-----------------------------------------------------------------------------
 //
+// universe_ioport_default_permissions()
+//
+//-----------------------------------------------------------------------------
+static int universe_ioport_default_permissions(uint16_t port)
+{
+	/* function returns -1 indicating failure. */
+	return -1;
+}
+//-----------------------------------------------------------------------------
+//
 // universe_setup_universe_dev()
 //
 //-----------------------------------------------------------------------------
@@ -524,7 +537,22 @@ static int universe_open(struct inode *inode,struct file *file)
 #ifdef UNIVERSE_DEBUG
 	printk( KERN_DEBUG UNIVERSE_PREFIX "Opening universe file: %d\n", minor);
 #endif
-	if (minor == CONTROL_MINOR) return 0;
+	if (minor == CONTROL_MINOR) {
+		universe_ioport_permissions = universe_ioport_default_permissions;
+#ifndef CONFIG_DMI
+		printk( KERN_ERR UNIVERSE_PREFIX "ioctl error: kernel not compiled with CONFIG_DMI.\n"); 
+		printk( KERN_ERR UNIVERSE_PREFIX "ioctl error: Driver unable to determine SBC type.\n"); 
+		universe_board_type = UNIVERSE_BOARD_TYPE_UNKNOWN;
+#else
+		if ( dmi_name_in_vendors("Concurrent Technologies") ) {
+			universe_board_type = UNIVERSE_BOARD_TYPE_CCT;	
+			universe_ioport_permissions = concurrent_ioports_permissions;
+		} else {	
+			universe_board_type = UNIVERSE_BOARD_TYPE_UNKNOWN;	
+		}
+#endif 
+		return 0;
+	}
 	if (minor == DMA_MINOR) {
 		/* get free pages for the dma device. */
 		/* We request a lot, but we should be ok. */
@@ -952,7 +980,7 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 {
 	unsigned int minor = MINOR(inode->i_rdev);
 	unsigned long sizetomap = 0, bs = 0;
-	unsigned char readBack = 0;
+	struct universe_ioport_ioctl ioport_str;
 	int err  = 0;
 	struct universe_dev *dev;
 
@@ -1081,17 +1109,40 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 		dev->image_perform_ioremap = (arg == 0) ? 0 : 1;
 		break;
 
-	case UNIVERSE_IOCSET_HW_BYTESWAP:
-		/* This is extremely hardware dependent!  Only works for concurrent boards!*/
-		/* FixME: somehow disable this on other systems. */
+	case UNIVERSE_IOCIO_PORT_READ:
+		/* This driver essentially circumvents ioperm by allowing processes to 
+		 * read and write io ports without being the superuser.  This is necessary
+		 * to get at board registers which affect VME transactions. */
 		if (minor != CONTROL_MINOR) return -EPERM;
-		readBack = (0x38 & arg);
-		outb(readBack, VX407_CSR0);	
-		if ((0x38 & arg) != (readBack = (0x38 & inb(VX407_CSR0)))) { 
-			printk(	KERN_WARNING UNIVERSE_PREFIX " Hardware swap not set at address 0x%x. Set: 0x%x, Readback: 0x%x\n", 
-				VX407_CSR0, (unsigned int)(0x38 & arg), readBack);
+		if (__copy_from_user(&ioport_str, (void __user *)arg, sizeof(ioport_str)) !=0 ) {
 			return -EIO;
 		}
+		/* Performing a permissions check. */
+		if ( (*universe_ioport_permissions)(ioport_str.address) < 0 ) return -EPERM;
+		ioport_str.value = inb(ioport_str.address); 
+		if (__copy_to_user((void __user *) arg, &ioport_str, sizeof(ioport_str))!= 0 ) {
+			return -EIO;
+		}
+		break;
+		//readBack = (0x38 & arg);
+		//outb(readBack, VX407_CSR0);	
+		//if ((0x38 & arg) != (readBack = (0x38 & inb(VX407_CSR0)))) { 
+		//	printk(	KERN_WARNING UNIVERSE_PREFIX " Hardware swap not set at address 0x%x. Set: 0x%x, Readback: 0x%x\n", 
+		//		VX407_CSR0, (unsigned int)(0x38 & arg), readBack);
+		//	return -EIO;
+		//}
+
+	case UNIVERSE_IOCIO_PORT_WRITE:
+		/* This driver essentially circumvents ioperm by allowing processes to 
+		 * read and write io ports without being the superuser.  This is necessary
+		 * to get at board registers which affect VME transactions. */
+		if (minor != CONTROL_MINOR) return -EPERM;
+		if (__copy_from_user(&ioport_str, (void __user *)arg, sizeof(ioport_str)) !=0 ) {
+			return -EIO;
+		}
+		/* Performing a permissions check. */
+		if ( (*universe_ioport_permissions)(ioport_str.address) < 0 ) return -EPERM;
+		outb(ioport_str.value, ioport_str.address); 
 		break;
 
 	case UNIVERSE_IOCGET_MEM_SIZE:
@@ -1106,11 +1157,9 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 		/* only returning the board type if we know. */
 		/* It is the responsibility of the calling API to appropriately 
 		 * to handle this board type correctly. */
-		if ( dmi_name_in_vendors("Concurrent Technologies") ) {
-			return __put_user(UNIVERSE_BOARD_TYPE_CCT, (unsigned int __user *)arg );
-		} else {	
-			return __put_user(UNIVERSE_BOARD_TYPE_UNKNOWN, (unsigned int __user *)arg );
-		}
+
+		return __put_user(universe_board_type, (unsigned int __user *)arg );
+
 
 	case UNIVERSE_IOCCHECK_BUS_ERROR:
 		return universe_check_bus_error();

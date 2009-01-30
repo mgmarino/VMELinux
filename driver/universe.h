@@ -110,6 +110,11 @@ typedef struct
 #define PCI_SIZE_16            0x0002
 #define PCI_SIZE_32            0x0003
 
+struct universe_ioport_ioctl {
+	char value; 
+	uint16_t address;
+};
+
 // Defining IOCTL calls
 // We are adding ioctl numbers to the kernel
 // so we obey linux convention.
@@ -124,11 +129,15 @@ typedef struct
 #define UNIVERSE_IOCSET_HW_BYTESWAP  _IO(UNIVERSE_MAGIC_NUMBER, 7)
 #define UNIVERSE_IOCGET_MEM_SIZE     _IOR(UNIVERSE_MAGIC_NUMBER, 8, unsigned long)
 #define UNIVERSE_IOCGET_BOARD_TYPE   _IOR(UNIVERSE_MAGIC_NUMBER, 9, unsigned int)
-#define UNIVERSE_IOCCHECK_BUS_ERROR  _IO(UNIVERSE_MAGIC_NUMBER, 10)
-#define UNIVERSE_IOC_MAXNR      10
+#define UNIVERSE_IOCIO_PORT_READ     _IOWR(UNIVERSE_MAGIC_NUMBER, 10, struct universe_ioport_ioctl)
+#define UNIVERSE_IOCIO_PORT_WRITE    _IOW(UNIVERSE_MAGIC_NUMBER, 11, struct universe_ioport_ioctl)
+#define UNIVERSE_IOCCHECK_BUS_ERROR  _IO(UNIVERSE_MAGIC_NUMBER, 12)
+#define UNIVERSE_IOC_MAXNR      12
 
-#define UNIVERSE_BOARD_TYPE_UNKNOWN  0
-#define UNIVERSE_BOARD_TYPE_CCT      1
+enum universe_motherboard_type { 
+	UNIVERSE_BOARD_TYPE_UNKNOWN = 0,
+	UNIVERSE_BOARD_TYPE_CCT
+};
 
 // Byte-swapping arguments for SET_HW_BYTESWAP 
 #define UNIVERSE_IOCMASTER_BYTESWAP  0x8
