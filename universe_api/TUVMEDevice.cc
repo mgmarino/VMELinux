@@ -19,7 +19,7 @@ TUVMEDevice::~TUVMEDevice()
   pthread_mutex_destroy( &fLock );
 }
 
-int TUVMEDevice::Open()  
+int32_t TUVMEDevice::Open()  
 {
   std::ostringstream os;
   if (fDevNumber >= (int32_t)kNumberOfDevices) {
@@ -37,7 +37,7 @@ int TUVMEDevice::Open()
   return 0;
 }
 
-int TUVMEDevice::SetWithAddressModifier(uint32_t addressModifier) 
+int32_t TUVMEDevice::SetWithAddressModifier(uint32_t addressModifier) 
 {
   if ((addressModifier & 0xF) <= 0x7) return -1;
     /* We are not equipped to handle other types of AMs.*/
@@ -64,7 +64,7 @@ int TUVMEDevice::SetWithAddressModifier(uint32_t addressModifier)
 
 }
 
-int TUVMEDevice::Enable()
+int32_t TUVMEDevice::Enable()
 {
   if (!fIsOpen) {
     return -1;
@@ -148,6 +148,14 @@ int TUVMEDevice::Enable()
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_BS, fPCIOffset) < 0 ) return -1; 
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_BD, fSizeOfImage) < 0 ) return -1; 
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_VME, fVMEAddress) < 0 ) return -1; 
+  if ( !fUseIORemap ) {
+    /* Attemp to memory map the space. */
+    fMappedAddress = mmap(0, fSizeOfImage, PROT_READ | PROT_WRITE, MAP_SHARED, fFileNum, 0);
+    if ( fMappedAddress == MAP_FAILED ) { 
+      fMappedAddress = NULL;
+      return -1;
+    }
+  }
   return 0;
 }
 
@@ -162,20 +170,36 @@ void TUVMEDevice::Close()
     close(fFileNum);
     fIsOpen = false;
   }
+  if ( fMappedAddress ) munmap( (void*)fMappedAddress, fSizeOfImage ); 
 }
 
 int32_t TUVMEDevice::Read(char* buffer, uint32_t numBytes, uint32_t offset)
 {
   if (!fIsOpen) return 0; 
-  lseek(fFileNum, offset, SEEK_SET);
-  return read(fFileNum, buffer, numBytes); 
+  if ( fMappedAddress ) {
+    memcpy(buffer, (char*)fMappedAddress + offset, numBytes); 
+    if ( CheckBusError() == 0 ) return numBytes;
+    else return 0;
+  } else {
+    lseek(fFileNum, offset, SEEK_SET);
+    return read(fFileNum, buffer, numBytes); 
+  }
 }
 
 int32_t TUVMEDevice::Write(char* buffer, uint32_t numBytes, uint32_t offset)
 {
   if (!fIsOpen) return 0; 
-  lseek(fFileNum, offset, SEEK_SET);
-  return write(fFileNum, buffer, numBytes); 
+  if ( fMappedAddress ) {
+    memcpy((char*)fMappedAddress + offset, buffer, numBytes); 
+    if ( CheckBusError() == 0 ) return numBytes;
+    else return 0;
+  } else {
+    lseek(fFileNum, offset, SEEK_SET);
+    return write(fFileNum, buffer, numBytes); 
+  }
 }
 
-
+int32_t TUVMEDevice::CheckBusError() 
+{
+  return ioctl( fFileNum, UNIVERSE_IOCCHECK_BUS_ERROR ); 
+}

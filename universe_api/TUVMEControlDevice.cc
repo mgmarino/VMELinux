@@ -85,3 +85,12 @@ void TUVMEControlDevice::SetDSHighTimeBLTs(ECycleSpeeds speed)
   }
   Write((char*)scratch, sizeof(uint32_t), U2SPEC);
 }
+
+TUVMEControlDevice::EBoardType TUVMEControlDevice::GetBoardType()
+{
+  if (!fIsOpen) return kUnknown;
+  uint32_t argument = 0;
+  if (ioctl(fFileNum, UNIVERSE_IOCGET_BOARD_TYPE, (uint32_t)&argument) < 0) return kUnknown;
+  return (EBoardType)argument;
+ 
+}

@@ -111,7 +111,7 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
   device->SetDataWidth((TUVMEDevice::ETUVMEDeviceDataWidth)dataWidth);
   device->SetVMEAddress(vmeAddress);
   device->SetAllowPostedWrites(fUsePostedWrites);
-  device->SetUseIORemap(true); // we don't remap things yet
+  device->SetUseIORemap(false); // we don't remap things by default anymore
   device->SetPCIOffset(label*fSizePerImage);
   device->SetSizeOfImage(((sizeOfImage==0) ? fSizePerImage : sizeOfImage));
   if (device->Enable() < 0) {

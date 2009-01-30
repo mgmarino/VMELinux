@@ -6,6 +6,7 @@
 #include <string>
 #include "universe.h"
 #include <pthread.h>
+#include <sys/mman.h>
 
 
 class TUVMEDevice {
@@ -32,14 +33,10 @@ class TUVMEDevice {
 
     enum ETUVMEDeviceType { kNonPrivileged = 0, kSuper };
 
-    inline void Reset() 
-      {fPCIOffset=0; fVMEAddress=0; fSizeOfImage=0; fAddressSpace=kA16; fDataWidth=kD8;
-       fMode=kData; fType=kNonPrivileged; fUseBLTs=false; fAllowPostedWrites=false;
-       fUseIORemap=false;}
     inline void SetPCIOffset(uint32_t offset) {fPCIOffset = offset;}
     void SetVMEAddress(uint32_t vmeAddress); 
     inline void SetSizeOfImage(uint32_t sizeOfImage) {fSizeOfImage = sizeOfImage;}
-    int SetWithAddressModifier(uint32_t addressModifier);
+    int32_t SetWithAddressModifier(uint32_t addressModifier);
     inline void SetAddressSpace(ETUVMEDeviceAddressSpace addressSpace) 
       {fAddressSpace = addressSpace;}
     inline void SetDataWidth(ETUVMEDeviceDataWidth dataWidth) 
@@ -56,10 +53,13 @@ class TUVMEDevice {
     inline uint32_t GetVMEAddress() {return fVMEAddress;}
     inline uint32_t GetSizeOfImage() {return fSizeOfImage;}
 
-    virtual std::string GetDeviceStringName() {return "vme_m";}    
+    inline volatile void* GetMappedAddress() {return fMappedAddress;}
 
-    int Open();
-    virtual int Enable(); 
+    virtual std::string GetDeviceStringName() {return "vme_m";}    
+    int32_t CheckBusError();
+
+    int32_t Open();
+    virtual int32_t Enable(); 
     void Close();
 
     /* Locking functions for thread safety. */
@@ -85,8 +85,14 @@ class TUVMEDevice {
     bool fIsOpen;
     int32_t fDevNumber;
 
+    volatile void* fMappedAddress;
+
     pthread_mutex_t fLock;
      
+    inline void Reset() 
+      {fPCIOffset=0; fVMEAddress=0; fSizeOfImage=0; fAddressSpace=kA16; fDataWidth=kD8;
+       fMode=kData; fType=kNonPrivileged; fUseBLTs=false; fAllowPostedWrites=false;
+       fUseIORemap=false; fMappedAddress=NULL;}
 };
 #else
 typedef struct TUVMEDevice TUVMEDevice;

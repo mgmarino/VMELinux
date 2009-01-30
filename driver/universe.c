@@ -57,10 +57,10 @@ static char Version[] = "2.0.b1 2008Nov05";
 #include <linux/errno.h>
 #include <linux/pci.h>
 #include <linux/spinlock.h>
+#include <linux/dmi.h>
 #include <asm/io.h>
 #include <asm/atomic.h>
 #include "universe.h"
-
 
 //----------------------------------------------------------------------------
 // Module parameters 
@@ -1096,11 +1096,24 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 
 	case UNIVERSE_IOCGET_MEM_SIZE:
 		if (minor != CONTROL_MINOR) return -EPERM;
-		/* only returning the size.	The mem location is handled internally. */
+		/* only returning the size.  The mem location is handled internally. */
 		/* It is the responsibility of the calling API to appropriately 
 		 * setup how the memory exists in the chunk (i.e. by setting up offsets).*/
 		return __put_user(size_to_reserve, (unsigned long __user *)arg );
-		break; 
+
+	case UNIVERSE_IOCGET_BOARD_TYPE:
+		if (minor != CONTROL_MINOR) return -EPERM;
+		/* only returning the board type if we know. */
+		/* It is the responsibility of the calling API to appropriately 
+		 * to handle this board type correctly. */
+		if ( dmi_name_in_vendors("Concurrent Technologies") ) {
+			return __put_user(UNIVERSE_BOARD_TYPE_CCT, (unsigned int __user *)arg );
+		} else {	
+			return __put_user(UNIVERSE_BOARD_TYPE_UNKNOWN, (unsigned int __user *)arg );
+		}
+
+	case UNIVERSE_IOCCHECK_BUS_ERROR:
+		return universe_check_bus_error();
 
 	}
 	return 0;

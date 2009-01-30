@@ -15,7 +15,10 @@ class TUVMEControlDevice: public TUVMEDevice {
 
     enum ECycleSpeeds { kNormal  = 0,
                         kFaster  = 1,
-                        kFastest = 2};
+                        kFastest = 2 };
+
+    enum EBoardType { kUnknown = UNIVERSE_BOARD_TYPE_UNKNOWN,
+	              kCCT     = UNIVERSE_BOARD_TYPE_CCT }; 
     
     virtual std::string GetDeviceStringName() {return "vme_ctl";}    
     virtual int Enable() {return 0;} 
@@ -25,6 +28,7 @@ class TUVMEControlDevice: public TUVMEDevice {
     void SetDSNegationSpeed(ECycleSpeeds speed = kNormal);
     void SetDSHighTimeBLTs(ECycleSpeeds speed = kNormal);
     size_t GetPCIMemorySize();
+    EBoardType GetBoardType();
 
   protected:
     
