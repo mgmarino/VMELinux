@@ -1,8 +1,13 @@
 BASERCADDRESS=/etc
 
 setup_driver_auto:
-	@if grep -q ".*SERVICES.*=.*(.*$(BASENAME).*)" $(BASERCADDRESS)/rc.conf; then echo "$(BASENAME) already installed?"; else sed -e "s/\(.*SERVICES.*=.*(.*\))/\1 $(BASENAME))/" $(BASERCADDRESS)/rc.conf > temp.conf; mv temp.conf $(BASERCADDRESS)/rc.conf; chmod 644 $(BASERCADDRESS)/rc.conf; $(BASERCADDRESS)/rc.d/$(BASENAME) start || exit $$?; fi
+	@if ! lsmod | grep -q $(BASENAME); then $(BASERCADDRESS)/rc.d/$(BASENAME) start || exit $$?; fi
+	@if grep -q ".*SERVICES.*=.*(.*$(BASENAME).*)" $(BASERCADDRESS)/rc.conf; then echo "$(BASENAME) already installed?"; else sed -e "s/\(.*SERVICES.*=.*(.*\))/\1 $(BASENAME))/" $(BASERCADDRESS)/rc.conf > temp.conf; mv temp.conf $(BASERCADDRESS)/rc.conf; chmod 644 $(BASERCADDRESS)/rc.conf; fi
 
 uninstall_driver_auto:
-	@if grep -q ".*SERVICES.*=.*(.*$(BASENAME).*)" $(BASERCADDRESS)/rc.conf; then $(INSTALLINITDIR)/$(BASENAME) stop || exit $$?;sed -e "s/\(.*SERVICES.*=.*(.*\)\s$(BASENAME)\(.*\)/\1\2/" $(BASERCADDRESS)/rc.conf > temp.conf; mv temp.conf $(BASERCADDRESS)/rc.conf; chmod 644 $(BASERCADDRESS)/rc.conf;  else echo "$(BASENAME) not installed?"; fi
+	@if ! grep -q ".*SERVICES.*=.*(.*$(BASENAME).*)" $(BASERCADDRESS)/rc.conf; then echo "$(BASENAME) not installed?"; fi
+	@if lsmod | grep -q $(BASENAME); then $(INSTALLINITDIR)/$(BASENAME) stop || exit $$?; fi
+	@sed -e "s/\(.*SERVICES.*=.*(.*\)\s$(BASENAME)\(.*\)/\1\2/" $(BASERCADDRESS)/rc.conf > temp.conf
+	@mv temp.conf $(BASERCADDRESS)/rc.conf
+	@chmod 644 $(BASERCADDRESS)/rc.conf	
 	@rm -f $(INSTALLINITDIR)/$(BASENAME)	
