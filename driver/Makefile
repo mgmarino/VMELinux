@@ -38,6 +38,9 @@ install: $(BASENAME).ko
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 644 $(BASENAME).ko $(INSTALLDIR)/vme || exit $$?
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 744 install_universe_driver.sh $(INSTALLSCRIPTSDIR) || exit $$?
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 744 remove_universe_driver.sh $(INSTALLSCRIPTSDIR) || exit $$?
+	@echo "Using following parameters for driver install:"
+	@echo "    PCI Address mapping for driver: $(RESERVE_FROM_ADDRESS)"
+	@echo "    PCI Size mapping for driver: $(SIZE_TO_RESERVE)"
 	@sed -e 's/@INSTALLSCRIPTSDIR@/$(INSTALLSCRIPTSDIRSED)/' -e 's/@SIZE_TO_RESERVE@/$(SIZE_TO_RESERVE)/' -e 's/@RESERVE_FROM_ADDRESS@/$(RESERVE_FROM_ADDRESS)/'< $(BASENAME).input > $(BASENAME).temp
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp $(INSTALLINITDIR)/$(BASENAME) || exit $$?
 	@ echo "$(BASENAME) installed in $(INSTALLINITDIR)" 
