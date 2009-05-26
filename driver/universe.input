@@ -11,12 +11,14 @@
 # check that the install script exists
 prog="universe"
 scriptdir=@INSTALLSCRIPTSDIR@
+size_to_reserve="size_to_reserve=@SIZE_TO_RESERVE@"
+reserve_from_address="reserve_from_address=@RESERVE_FROM_ADDRESS@"
 [ -d $scriptdir ] ||  exit 0
 
 start() 
 {
         echo -n $"Starting ${prog}: " 
-        [ -x $scriptdir/install_universe_driver.sh ] && $scriptdir/install_universe_driver.sh || exit $?
+        [ -x $scriptdir/install_universe_driver.sh ] && $scriptdir/install_universe_driver.sh $size_to_reserve $reserve_from_address || exit $?
 }
 
 stop() 

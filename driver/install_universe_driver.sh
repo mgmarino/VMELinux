@@ -8,8 +8,8 @@ kernel=$version
 # invoke insmod with all arguments we were passed
 # and use a pathname, as newer modutils don't look in . by default
 # Available options:
-#   sizeToReserve=(Give the size of pci space to reserve)
-#   reserveFromAddress=(Give starting pci address from which to reserve.)
+#   size_to_reserve=(Give the size of pci space to reserve)
+#   reserve_from_address=(Give starting pci address from which to reserve.)
 /sbin/insmod /lib/modules/$kernel/kernel/drivers/vme/$module.ko $* || exit 1
 
 

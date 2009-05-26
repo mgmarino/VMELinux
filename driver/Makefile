@@ -10,6 +10,8 @@ INSTALLDIR = /lib/modules/$(shell uname -r)/kernel/drivers
 INSTALLSCRIPTSDIR = /usr/local/universe/scripts
 INSTALLSCRIPTSDIRSED = $(subst /,\/,$(INSTALLSCRIPTSDIR))
 INSTALLINITDIR := $(shell if [ -d /etc/init.d ]; then echo "/etc/init.d"; else echo "/etc/rc.d"; fi)
+SIZE_TO_RESERVE := $(shell if [ -f $(PWD)/parse_iomem.pl ]; then perl -s $(PWD)/parse_iomem.pl -size; fi)
+RESERVE_FROM_ADDRESS := $(shell if [ -f $(PWD)/parse_iomem.pl ]; then perl -s $(PWD)/parse_iomem.pl -address; fi)
 
 .PHONY: setup_driver_auto uninstall_driver_auto
 
@@ -36,7 +38,7 @@ install: $(BASENAME).ko
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 644 $(BASENAME).ko $(INSTALLDIR)/vme || exit $$?
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 744 install_universe_driver.sh $(INSTALLSCRIPTSDIR) || exit $$?
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -m 744 remove_universe_driver.sh $(INSTALLSCRIPTSDIR) || exit $$?
-	@sed 's/@INSTALLSCRIPTSDIR@/$(INSTALLSCRIPTSDIRSED)/' < $(BASENAME).input > $(BASENAME).temp
+	@sed -e 's/@INSTALLSCRIPTSDIR@/$(INSTALLSCRIPTSDIRSED)/' -e 's/@SIZE_TO_RESERVE@/$(SIZE_TO_RESERVE)/' -e 's/@RESERVE_FROM_ADDRESS@/$(RESERVE_FROM_ADDRESS)/'< $(BASENAME).input > $(BASENAME).temp
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp $(INSTALLINITDIR)/$(BASENAME) || exit $$?
 	@ echo "$(BASENAME) installed in $(INSTALLINITDIR)" 
 	@rm -f $(BASENAME).temp
