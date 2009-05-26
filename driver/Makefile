@@ -41,7 +41,7 @@ install: $(BASENAME).ko
 	@echo "Using following parameters for driver install:"
 	@echo "    PCI Address mapping for driver: $(RESERVE_FROM_ADDRESS)"
 	@echo "    PCI Size mapping for driver: $(SIZE_TO_RESERVE)"
-	@if [ $(SIZE_TO_RESERVE) -lt 0x10000000]; then echo "    PCI Size is smaller than 256 MB, this could cause problems."; fi
+	@if [ $(SIZE_TO_RESERVE) -lt 0x10000000 ]; then echo "    PCI Size is smaller than 256 MB, this could cause problems."; fi
 	@sed -e 's/@INSTALLSCRIPTSDIR@/$(INSTALLSCRIPTSDIRSED)/' -e 's/@SIZE_TO_RESERVE@/$(SIZE_TO_RESERVE)/' -e 's/@RESERVE_FROM_ADDRESS@/$(RESERVE_FROM_ADDRESS)/'< $(BASENAME).input > $(BASENAME).temp
 	@$(INSTALL) -o $(INSTALLUSR) -g $(INSTALLGRP) -T $(BASENAME).temp $(INSTALLINITDIR)/$(BASENAME) || exit $$?
 	@ echo "$(BASENAME) installed in $(INSTALLINITDIR)" 
