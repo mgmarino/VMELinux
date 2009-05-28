@@ -45,9 +45,9 @@ void TUVMEControlDevice::SetHWByteSwap(bool doByteSwap)
 size_t TUVMEControlDevice::GetPCIMemorySize()
 {
   if (!fIsOpen) return 0;
-  uint32_t argument = 0;
-  if (ioctl(fFileNum, UNIVERSE_IOCGET_MEM_SIZE, (uint32_t)&argument) < 0) return 0;
-  return (size_t)argument;
+  size_t argument = 0;
+  if (ioctl(fFileNum, UNIVERSE_IOCGET_MEM_SIZE, &argument) < 0) return 0;
+  return argument;
 }
 
 void TUVMEControlDevice::SetDSNegationSpeed(ECycleSpeeds speed) 
@@ -99,8 +99,8 @@ void TUVMEControlDevice::SetDSHighTimeBLTs(ECycleSpeeds speed)
 TUVMEControlDevice::EBoardType TUVMEControlDevice::GetBoardType()
 {
   if (!fIsOpen) return kUnknown;
-  uint32_t argument = 0;
-  if (ioctl(fFileNum, UNIVERSE_IOCGET_BOARD_TYPE, (uint32_t)&argument) < 0) return kUnknown;
+  size_t argument = 0;
+  if (ioctl(fFileNum, UNIVERSE_IOCGET_BOARD_TYPE, &argument) < 0) return kUnknown;
   return (EBoardType)argument;
  
 }
@@ -110,7 +110,7 @@ int TUVMEControlDevice::ReadIOPortMemory(uint16_t address)
   if (!fIsOpen) return -1;
   struct universe_ioport_ioctl tempStruct;
   tempStruct.address = address;
-  if ( ioctl(fFileNum, UNIVERSE_IOCIO_PORT_READ, (uint32_t)&tempStruct) < 0 ) return -1;
+  if ( ioctl(fFileNum, UNIVERSE_IOCIO_PORT_READ, &tempStruct) < 0 ) return -1;
   return tempStruct.value;
 }
 
@@ -120,7 +120,7 @@ int TUVMEControlDevice::WriteIOPortMemory(uint16_t address, uint8_t value)
   struct universe_ioport_ioctl tempStruct;
   tempStruct.address = address;
   tempStruct.value = value;
-  if ( ioctl(fFileNum, UNIVERSE_IOCIO_PORT_WRITE, (uint32_t)&tempStruct) < 0 ) return -1;
+  if ( ioctl(fFileNum, UNIVERSE_IOCIO_PORT_WRITE, &tempStruct) < 0 ) return -1;
   return 0;
 
 }

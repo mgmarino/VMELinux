@@ -662,7 +662,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 	printk( KERN_DEBUG UNIVERSE_PREFIX "Initiating a read.\n");
 #endif
 	if (minor == CONTROL_MINOR) {
-		v = ioread32(universe_driver.baseaddr + (unsigned int)dev->image_ptr);		
+		v = ioread32(universe_driver.baseaddr + (unsigned long)dev->image_ptr);		
 		if (copy_to_user(buf,&v,sizeof(v))) return -EFAULT;
 		return sizeof(v);
 	} 
@@ -826,7 +826,7 @@ static ssize_t universe_write(struct file *file, const char *buf, size_t count, 
 
 	if (minor == CONTROL_MINOR) {
 		if (copy_from_user(&vl,buf,sizeof(vl))) return -EFAULT;
-		iowrite32(vl,universe_driver.baseaddr + (int)dev->image_ptr);
+		iowrite32(vl,universe_driver.baseaddr + (unsigned long)dev->image_ptr);
 		return sizeof(vl);
 	} 
 
