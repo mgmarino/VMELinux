@@ -3,6 +3,7 @@
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
+#include <cstring>
 
 TUVMEDevice::TUVMEDevice(uint32_t devNumber)
 {
