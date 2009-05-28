@@ -23,7 +23,10 @@ foreach $line (<IOMEM_FILE>) {
 }
 
 # now deal with the fact that it should be 256-MB aligned
-$largest_chunk_address += $largest_chunk_size & 0x0FFFFFFF;
+if ($largest_chunk_address & 0x0FFFFFFF) {
+  $largest_chunk_address -= $largest_chunk_address & 0x0FFFFFFF;
+  $largest_chunk_address += 0x10000000;
+}
 $largest_chunk_size -= $largest_chunk_size & 0x0FFFFFFF;
 
 if ($size) {
