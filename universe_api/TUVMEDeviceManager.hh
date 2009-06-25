@@ -14,9 +14,8 @@
 
 class TUVMEDeviceManager {
   public:
-    TUVMEDeviceManager();
-    ~TUVMEDeviceManager();
 
+    static TUVMEDeviceManager* GetDeviceManager();
     enum ETUVMEDevMgrEnum {kA16Dev1 = 0, kA16Dev2 = 4};
 
     TUVMEDevice* GetDevice(uint32_t vmeAddress, 
@@ -36,7 +35,12 @@ class TUVMEDeviceManager {
     
     void SetUsePostedWrites(bool usePostedWrites = true) 
       {fUsePostedWrites = usePostedWrites;}
+
   protected:
+    TUVMEDeviceManager();
+    TUVMEDeviceManager(const TUVMEDeviceManager&);
+    TUVMEDeviceManager& operator=(const TUVMEDeviceManager&);
+    ~TUVMEDeviceManager();
     bool fUsePostedWrites;
     bool fControlDeviceIsOpen;
     bool fDMADeviceIsOpen;
@@ -48,6 +52,9 @@ class TUVMEDeviceManager {
     uint32_t fSizePerImage;
 
     pthread_rwlock_t fReadWriteLock;
+
+  private:
+    static TUVMEDeviceManager* gUniverseDeviceManager;
     
 };
 #endif /*__cplusplus*/

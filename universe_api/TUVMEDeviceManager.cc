@@ -1,5 +1,12 @@
 #include "TUVMEDeviceManager.hh"
 
+TUVMEDeviceManager* TUVMEDeviceManager::gUniverseDeviceManager = NULL;
+TUVMEDeviceManager* TUVMEDeviceManager::GetDeviceManager()
+{
+  if (!gUniverseDeviceManager) gUniverseDeviceManager = new TUVMEDeviceManager;
+  return gUniverseDeviceManager;
+}
+
 TUVMEDeviceManager::TUVMEDeviceManager()
 {
   for (uint32_t i=0;i<TUVMEDevice::kNumberOfDevices;i++) {
@@ -173,54 +180,53 @@ TUVMEDevice* TUVMEDeviceManager::GetDMADevice(uint32_t vmeAddress,
 /************************************************************************/
 /************************************************************************/
 
-static TUVMEDeviceManager gUniverseDevMgr;
-/* We use a global device manager.  This means that two programs cannot be open at the same time. */
+/* We use the device manager singleton class.  This means that two programs cannot be open at the same time. */
 
 TUVMEDevice* get_new_device(uint32_t vmeAddress, uint32_t addressModifier, 
   uint32_t dataWidth, uint32_t sizeOfImage)
 {
-  return gUniverseDevMgr.GetDevice(vmeAddress, addressModifier, dataWidth, sizeOfImage);
+  return TUVMEDeviceManager::GetDeviceManager()->GetDevice(vmeAddress, addressModifier, dataWidth, sizeOfImage);
 }
 
 int32_t close_device(TUVMEDevice* device)
 {
-  return gUniverseDevMgr.CloseDevice(device);
+  return TUVMEDeviceManager::GetDeviceManager()->CloseDevice(device);
 }
 
 TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth, bool autoIncrement)
 {
-  return gUniverseDevMgr.GetDMADevice(vmeAddress, addressModifier, dataWidth, autoIncrement);
+  return TUVMEDeviceManager::GetDeviceManager()->GetDMADevice(vmeAddress, addressModifier, dataWidth, autoIncrement);
 }
 
 void release_dma_device(void)
 {
-  gUniverseDevMgr.ReleaseDMADevice();
+  TUVMEDeviceManager::GetDeviceManager()->ReleaseDMADevice();
 }
 
 TUVMEDevice* get_ctl_device()
 {
-  return gUniverseDevMgr.GetControlDevice();
+  return TUVMEDeviceManager::GetDeviceManager()->GetControlDevice();
 }
 
 void set_hw_byte_swap(bool doSwap)
 {
-  TUVMEControlDevice* dev = dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice());
+  TUVMEControlDevice* dev = dynamic_cast<TUVMEControlDevice*>(TUVMEDeviceManager::GetDeviceManager()->GetControlDevice());
   if (dev) dev->SetHWByteSwap(doSwap);
 }
 
 uint32_t get_max_size_of_image()
 {
-  return gUniverseDevMgr.GetSizePerImage();
+  return TUVMEDeviceManager::GetDeviceManager()->GetSizePerImage();
 }
 
 /*void set_ds_negation_speed(uint32_t speed)
 {
-  dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice())->SetDSNegationSpeed((TUVMEControlDevice::ECycleSpeeds)speed);
+  dynamic_cast<TUVMEControlDevice*>(TUVMEDeviceManager::GetDeviceManager()->GetControlDevice())->SetDSNegationSpeed((TUVMEControlDevice::ECycleSpeeds)speed);
 }
 
 void set_ds_high_time_blts(uint32_t speed)
 {
-  dynamic_cast<TUVMEControlDevice*>(gUniverseDevMgr.GetControlDevice())->SetDSHighTimeBLTs((TUVMEControlDevice::ECycleSpeeds)speed);
+  dynamic_cast<TUVMEControlDevice*>(TUVMEDeviceManager::GetDeviceManager()->GetControlDevice())->SetDSHighTimeBLTs((TUVMEControlDevice::ECycleSpeeds)speed);
 }*/
 
 void lock_device(TUVMEDevice* dev)
