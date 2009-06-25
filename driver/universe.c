@@ -78,6 +78,7 @@ MODULE_LICENSE("GPL");
 //----------------------------------------------------------------------------
 // Vars and Defines
 //----------------------------------------------------------------------------
+#define UNIVERSE_DEBUG
 #define MAX_MINOR	9 // This includes the DMA_MINOR
 #define CONTROL_MINOR	8
 #define DMA_MINOR	9
@@ -1043,7 +1044,7 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 		printk( KERN_DEBUG UNIVERSE_PREFIX "bs read in as: 0x%lx\n", bs);
 		printk( KERN_DEBUG UNIVERSE_PREFIX "arg read in as: 0x%lx\n", arg);
 #endif
-		if (arg+bs < size_to_reserve+reserve_from_address) {
+		if (arg+bs <= size_to_reserve+reserve_from_address) {
 			/* we want to make sure that the bound doesn't overshoot our reserved memory. */
 			
 #ifdef UNIVERSE_DEBUG
@@ -1194,7 +1195,7 @@ static int universe_mmap(struct file *file,struct vm_area_struct *vma)
 	physical_size = (bd - bs) - offset;	
 	if (virtual_size > physical_size) {
 		/* Range spans too much */
-		printk(KERN_WARNING UNIVERSE_PREFIX "  mmap failure:range (0x%lx) spans too much.\n", virtual_size);
+		printk(KERN_WARNING UNIVERSE_PREFIX "  mmap failure:range (0x%lx) spans too much, must be below (0x%lx).\n", virtual_size, physical_size);
 		return -EINVAL;
 	}
 
