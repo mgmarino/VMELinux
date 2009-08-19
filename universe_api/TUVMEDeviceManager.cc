@@ -38,35 +38,35 @@ TUVMEDeviceManager::TUVMEDeviceManager()
   }
   fSizePerImage = fControlDevice.GetPCIMemorySize()/TUVMEDevice::kNumberOfDevices;
 
-  pthread_rwlock_init( &fReadWriteLock, NULL );
+  pthread_mutex_init( &fLock, NULL );
 }
 
 TUVMEDeviceManager::~TUVMEDeviceManager()
 {
   std::set<TUVMEDevice*>::iterator iter; 
-  pthread_rwlock_wrlock( &fReadWriteLock );
+  LockDevice();
   for (iter = fAllDevices.begin();iter != fAllDevices.end(); iter++) {  
     delete *iter;
   }
-  pthread_rwlock_unlock( &fReadWriteLock );
-  pthread_rwlock_destroy( &fReadWriteLock );
+  UnlockDevice();
+  pthread_mutex_destroy( &fLock );
 }
 
 TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress, 
   uint32_t addressModifier, uint32_t dataWidth, uint32_t sizeOfImage)
 {
-  pthread_rwlock_rdlock( &fReadWriteLock );
+  LockDevice();
   TUVMEDevice* device = NULL;
   /* First check if there is something in the map that can handle this*/
   /* If not, we have to insert it into the set.*/
   /* Check to see if the available devices is 0. */
   if (fDevicesRemaining.empty()) {
-    pthread_rwlock_unlock( &fReadWriteLock );
+    UnlockDevice(); 
     /* We have to delete a member. */
     return NULL;
   }
   if (sizeOfImage > fSizePerImage) {
-    pthread_rwlock_unlock( &fReadWriteLock );
+    UnlockDevice(); 
     return NULL; 
   }
   /* Size is too big too handle, try increasing the size of memory allocated
@@ -97,21 +97,18 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
       }
     }
 
-    pthread_rwlock_unlock( &fReadWriteLock );
-    pthread_rwlock_wrlock( &fReadWriteLock );
-    fDevicesRemaining.erase(label);
-    pthread_rwlock_unlock( &fReadWriteLock );
+    fDevicesRemaining.erase(label)
 
     device = new TUVMEDevice(label);
     if (device->Open() >= 0) {
       break;
     }
     /* We couldn't open, try to loop through to find one to work. */
-    pthread_rwlock_rdlock( &fReadWriteLock );
     delete device; 
     device = NULL;
   }
   if (!device) {
+    UnlockDevice();
     return NULL;
   }
   device->SetWithAddressModifier(addressModifier);
@@ -126,12 +123,12 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
     /* Generally this happens if an ioremap fails, (e.g. vmalloc isn't set high enough) */
     /* Keep the device out of the Devices remaining since it could've been in use
      * by someone else. */
+    UnlockDevice();
     delete device;
     return NULL;
   }
-  pthread_rwlock_wrlock( &fReadWriteLock );
   fAllDevices.insert(device);
-  pthread_rwlock_unlock( &fReadWriteLock );
+  UnlockDevice();
   return device;
 }
 

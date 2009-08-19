@@ -35,6 +35,9 @@ class TUVMEDeviceManager {
     
     void SetUsePostedWrites(bool usePostedWrites = true) 
       {fUsePostedWrites = usePostedWrites;}
+    
+    virtual int32_t LockDevice() { return pthread_mutex_lock( &fLock ); }
+    virtual int32_t UnlockDevice() { return pthread_mutex_unlock( &fLock ); }
 
   protected:
     TUVMEDeviceManager();
@@ -51,7 +54,7 @@ class TUVMEDeviceManager {
     TUVMEDMADevice fDMADevice;
     uint32_t fSizePerImage;
 
-    pthread_rwlock_t fReadWriteLock;
+    pthread_mutex_t fLock;
 
   private:
     static TUVMEDeviceManager* gUniverseDeviceManager;
