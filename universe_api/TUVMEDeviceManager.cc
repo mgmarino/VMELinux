@@ -97,7 +97,7 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
       }
     }
 
-    fDevicesRemaining.erase(label)
+    fDevicesRemaining.erase(label);
 
     device = new TUVMEDevice(label);
     if (device->Open() >= 0) {
@@ -135,25 +135,22 @@ TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress,
 int32_t TUVMEDeviceManager::CloseDevice(TUVMEDevice* device)
 {
   /* First make sure it exists in here. */
-  pthread_rwlock_rdlock( &fReadWriteLock );
+  LockDevice();
 
   if (fAllDevices.find(device) == fAllDevices.end()) {
     /* Doesn't exist?  This is odd, some dev file is not being 
      * handled by the manager.*/
-    pthread_rwlock_unlock( &fReadWriteLock );
+    UnlockDevice();
     return -1;
   }
 
-  pthread_rwlock_unlock( &fReadWriteLock );
-  pthread_rwlock_wrlock( &fReadWriteLock );
 
   /* Return it to the available pool. */
   fAllDevices.erase(device);
   fDevicesRemaining.insert(device->GetDevNumber());
   delete device;
 
-  pthread_rwlock_unlock( &fReadWriteLock );
-
+  UnlockDevice();
   return 0;
 }
 
