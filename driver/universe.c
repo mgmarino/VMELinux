@@ -78,7 +78,7 @@ MODULE_LICENSE("GPL");
 //----------------------------------------------------------------------------
 // Vars and Defines
 //----------------------------------------------------------------------------
-#define UNIVERSE_DEBUG
+//#define UNIVERSE_DEBUG
 #define MAX_MINOR	9 // This includes the DMA_MINOR
 #define CONTROL_MINOR	8
 #define DMA_MINOR	9

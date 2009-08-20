@@ -76,6 +76,7 @@ extern TUVMEDevice* get_new_device(uint32_t vmeAddress, uint32_t addressModifier
   /* Not thread safe. */
 extern int32_t close_device(TUVMEDevice* device);
   /* Closes a device and releases it back into the available pool.  */
+  /* Calling on DMA or CTL devices has no effect. */
   /* Not thread safe. */
 extern TUVMEDevice* get_dma_device(uint32_t vmeAddress, uint32_t addressModifier, uint32_t dataWidth, bool autoIncrement);
   /* Grabs the dma device and sets up the transfer.  If NULL, this means that DMA device is busy. */
