@@ -1255,14 +1255,14 @@ static void universe_vma_close(struct vm_area_struct *vma)
 static int universe_check_bus_error(void)
 {
 	unsigned long tmp = ioread32(universe_driver.baseaddr + PCI_CSR);
-#ifdef UNIVERSE_DEBUG
-	printk( KERN_DEBUG UNIVERSE_PREFIX "Bus error: 0x%lx\n", tmp);
-#endif
 	if (tmp & 0x08000000) {	// S_TA is Set
+#ifdef UNIVERSE_DEBUG
+		printk( KERN_DEBUG UNIVERSE_PREFIX "PCI_CSR reg, S_TA set: 0x%lx\n", tmp);
+#endif
 		iowrite32(tmp, universe_driver.baseaddr + PCI_CSR);
 		tmp = ioread32(universe_driver.baseaddr + PCI_CSR);
 #ifdef UNIVERSE_DEBUG
-		printk( KERN_DEBUG UNIVERSE_PREFIX "Readback: 0x%lx\n", tmp);
+		printk( KERN_DEBUG UNIVERSE_PREFIX "Bus Error Readback: 0x%lx\n", tmp);
 #endif
 		return -EIO ;
 	}
