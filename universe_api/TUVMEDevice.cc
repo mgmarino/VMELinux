@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <cstring>
 
+TUVMEDeviceLock TUVMEDevice::fSystemLock;
+
 TUVMEDevice::TUVMEDevice(uint32_t devNumber)
 {
   Reset();
