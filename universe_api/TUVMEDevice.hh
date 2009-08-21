@@ -5,9 +5,12 @@
 #ifdef __cplusplus
 #include <string>
 #include "universe.h"
-#include <pthread.h>
 #include <sys/mman.h>
+#include "TUVMEDeviceLock.hh"
 
+/*
+ * This class represents a slave window in the Tundra Universe II chip.
+ */
 
 class TUVMEDevice {
 
@@ -63,8 +66,8 @@ class TUVMEDevice {
     void Close();
 
     /* Locking functions for thread safety. */
-    virtual int32_t LockDevice() { return pthread_mutex_lock( &fLock ); }
-    virtual int32_t UnlockDevice() { return pthread_mutex_unlock( &fLock ); }
+    virtual int32_t LockDevice() { return fLock.Lock(); }
+    virtual int32_t UnlockDevice() { return fLock.Unlock(); }
 
     int32_t Read(char* buffer, uint32_t numBytes, uint32_t offset = 0);
     int32_t Write(char* buffer, uint32_t numBytes, uint32_t offset = 0);
@@ -87,7 +90,8 @@ class TUVMEDevice {
 
     volatile void* fMappedAddress;
 
-    pthread_mutex_t fLock;
+    TUVMEDeviceLock fLock; // lock for this particular slave window
+    static TUVMEDeviceLock fSystemLock; // lock shared between all devices. 
      
     inline void Reset() 
       {fPCIOffset=0; fVMEAddress=0; fSizeOfImage=0; fAddressSpace=kA16; fDataWidth=kD8;

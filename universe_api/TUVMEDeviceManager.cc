@@ -38,7 +38,6 @@ TUVMEDeviceManager::TUVMEDeviceManager()
   }
   fSizePerImage = fControlDevice.GetPCIMemorySize()/TUVMEDevice::kNumberOfDevices;
 
-  pthread_mutex_init( &fLock, NULL );
 }
 
 TUVMEDeviceManager::~TUVMEDeviceManager()
@@ -49,7 +48,6 @@ TUVMEDeviceManager::~TUVMEDeviceManager()
     delete *iter;
   }
   UnlockDevice();
-  pthread_mutex_destroy( &fLock );
 }
 
 TUVMEDevice* TUVMEDeviceManager::GetDevice(uint32_t vmeAddress, 

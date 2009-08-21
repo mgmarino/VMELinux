@@ -11,13 +11,11 @@ TUVMEDevice::TUVMEDevice(uint32_t devNumber)
   fIsOpen = false;
   fFileNum = -1;
   fDevNumber = devNumber;
-  pthread_mutex_init( &fLock, NULL );
 }
 
 TUVMEDevice::~TUVMEDevice()
 {
   Close();
-  pthread_mutex_destroy( &fLock );
 }
 
 int32_t TUVMEDevice::Open()  
@@ -177,26 +175,44 @@ void TUVMEDevice::Close()
 int32_t TUVMEDevice::Read(char* buffer, uint32_t numBytes, uint32_t offset)
 {
   if (!fIsOpen) return 0; 
+  int32_t checker = 0;
+  /* The following lock is to prevent any other device from accessing the
+     universe chip and to ensure that the checked bus error corresponds
+     to the previous read.  */
+  fSystemLock.Lock();
   if ( fMappedAddress ) {
     memcpy(buffer, (char*)fMappedAddress + offset, numBytes); 
-    if ( CheckBusError() == 0 ) return numBytes;
+    checker = CheckBusError();
+    fSystemLock.Unlock();
+    if ( checker == 0 ) return numBytes;
     else return 0;
   } else {
     lseek(fFileNum, offset, SEEK_SET);
-    return read(fFileNum, buffer, numBytes); 
+    checker = read(fFileNum, buffer, numBytes); 
+    fSystemLock.Unlock();
+    return checker;
   }
 }
 
 int32_t TUVMEDevice::Write(char* buffer, uint32_t numBytes, uint32_t offset)
 {
   if (!fIsOpen) return 0; 
+  int32_t checker = 0;
+  /* The following lock is to prevent any other device from accessing the
+     universe chip and to ensure that the checked bus error corresponds
+     to the previous read.  */
+  fSystemLock.Lock();
   if ( fMappedAddress ) {
     memcpy((char*)fMappedAddress + offset, buffer, numBytes); 
-    if ( CheckBusError() == 0 ) return numBytes;
+    checker = CheckBusError();
+    fSystemLock.Unlock();
+    if ( checker == 0 ) return numBytes;
     else return 0;
   } else {
     lseek(fFileNum, offset, SEEK_SET);
-    return write(fFileNum, buffer, numBytes); 
+    checker = read(fFileNum, buffer, numBytes); 
+    fSystemLock.Unlock();
+    return checker;
   }
 }
 

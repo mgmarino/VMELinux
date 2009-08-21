@@ -5,10 +5,10 @@
 #include "TUVMEDevice.hh"
 #include "TUVMEControlDevice.hh"
 #include "TUVMEDMADevice.hh"
+#include "TUVMEDeviceLock.hh"
 
 #ifdef __cplusplus
 
-#include <pthread.h>
 #include <set> 
 #include <vector> 
 
@@ -36,14 +36,14 @@ class TUVMEDeviceManager {
     void SetUsePostedWrites(bool usePostedWrites = true) 
       {fUsePostedWrites = usePostedWrites;}
     
-    virtual int32_t LockDevice() { return pthread_mutex_lock( &fLock ); }
-    virtual int32_t UnlockDevice() { return pthread_mutex_unlock( &fLock ); }
+    virtual int32_t LockDevice() { return fLock.Lock(); }
+    virtual int32_t UnlockDevice() { return fLock.Unlock(); }
 
   protected:
     TUVMEDeviceManager();
     TUVMEDeviceManager(const TUVMEDeviceManager&);
     TUVMEDeviceManager& operator=(const TUVMEDeviceManager&);
-    ~TUVMEDeviceManager();
+    virtual ~TUVMEDeviceManager();
     bool fUsePostedWrites;
     bool fControlDeviceIsOpen;
     bool fDMADeviceIsOpen;
@@ -54,7 +54,7 @@ class TUVMEDeviceManager {
     TUVMEDMADevice fDMADevice;
     uint32_t fSizePerImage;
 
-    pthread_mutex_t fLock;
+    TUVMEDeviceLock fLock;
 
   private:
     static TUVMEDeviceManager* gUniverseDeviceManager;
