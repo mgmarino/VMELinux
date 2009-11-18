@@ -118,6 +118,7 @@ int32_t TUVMEDevice::WriteControlRegister()
   ctlRegister |= 0x80000000;
 
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_CTL, ctlRegister) < 0 ) return -1;  
+  return 0;
 
 }
 
