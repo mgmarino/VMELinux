@@ -38,17 +38,29 @@ class TUVMEDevice {
 
     inline void SetPCIOffset(uint32_t offset) {fPCIOffset = offset;}
     void SetVMEAddress(uint32_t vmeAddress); 
-    inline void SetSizeOfImage(uint32_t sizeOfImage) {fSizeOfImage = sizeOfImage;}
+
+    inline void SetSizeOfImage(uint32_t sizeOfImage) 
+      {fSizeOfImage = sizeOfImage; WriteControlRegister();}
+
     int32_t SetWithAddressModifier(uint32_t addressModifier);
     inline void SetAddressSpace(ETUVMEDeviceAddressSpace addressSpace) 
-      {fAddressSpace = addressSpace;}
+      {fAddressSpace = addressSpace; WriteControlRegister(); }
+
     inline void SetDataWidth(ETUVMEDeviceDataWidth dataWidth) 
-      {fDataWidth = dataWidth;}
-    inline void SetMode(ETUVMEDeviceMode mode) {fMode = mode;}
-    inline void SetType(ETUVMEDeviceType type) {fType = type;}
-    inline void SetUseBLTs(bool useBLTs) {fUseBLTs = useBLTs;}
+      {fDataWidth = dataWidth; WriteControlRegister();}
+
+    inline void SetMode(ETUVMEDeviceMode mode) 
+      {fMode = mode; WriteControlRegister();}
+
+    inline void SetType(ETUVMEDeviceType type) 
+      {fType = type; WriteControlRegister();}
+
+    inline void SetUseBLTs(bool useBLTs) 
+      {fUseBLTs = useBLTs; WriteControlRegister();}
+
     inline void SetAllowPostedWrites(bool allowPostedWrites) 
-      {fAllowPostedWrites = allowPostedWrites;}
+      {fAllowPostedWrites = allowPostedWrites; WriteControlRegister();}
+
     inline void SetUseIORemap(bool useIORemap) 
       {fUseIORemap = useIORemap;}
 
@@ -62,6 +74,10 @@ class TUVMEDevice {
     int32_t CheckBusError();
 
     int32_t Open();
+    /*Synchronize the control register of the chip with the state of this object. */
+    virtual int32_t WriteControlRegister();
+
+    /* Enable device */
     virtual int32_t Enable(); 
     void Close();
 

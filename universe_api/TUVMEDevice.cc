@@ -38,34 +38,7 @@ int32_t TUVMEDevice::Open()
   return 0;
 }
 
-int32_t TUVMEDevice::SetWithAddressModifier(uint32_t addressModifier) 
-{
-  if ((addressModifier & 0xF) <= 0x7) return -1;
-    /* We are not equipped to handle other types of AMs.*/
-  switch ((addressModifier & 0x30) >> 4) { 
-      case 3:
-          fAddressSpace = kA24;
-          break;
-      case 2:
-          fAddressSpace = kA16;
-          break;
-      case 1:
-          /* User defined address space. */
-          return -1;
-          break;
-      case 0:
-          fAddressSpace = kA32;
-          break;
-  } 
-
-  fType = ((addressModifier & 0x4) >> 2) ? kSuper : kNonPrivileged;
-  fUseBLTs = !(((addressModifier & 0x2) >> 1) ^ (addressModifier & 0x1)); 
-  fMode = (addressModifier & 0x1) ? kData : kProgram; 
-  return 0;
-
-}
-
-int32_t TUVMEDevice::Enable()
+int32_t TUVMEDevice::WriteControlRegister()
 {
   if (!fIsOpen) {
     return -1;
@@ -145,6 +118,42 @@ int32_t TUVMEDevice::Enable()
   ctlRegister |= 0x80000000;
 
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_CTL, ctlRegister) < 0 ) return -1;  
+
+}
+
+int32_t TUVMEDevice::SetWithAddressModifier(uint32_t addressModifier) 
+{
+  if ((addressModifier & 0xF) <= 0x7) return -1;
+    /* We are not equipped to handle other types of AMs.*/
+  switch ((addressModifier & 0x30) >> 4) { 
+      case 3:
+          fAddressSpace = kA24;
+          break;
+      case 2:
+          fAddressSpace = kA16;
+          break;
+      case 1:
+          /* User defined address space. */
+          return -1;
+          break;
+      case 0:
+          fAddressSpace = kA32;
+          break;
+  } 
+
+  SetType(((addressModifier & 0x4) >> 2) ? kSuper : kNonPrivileged);
+  SetUseBLTs(!(((addressModifier & 0x2) >> 1) ^ (addressModifier & 0x1))); 
+  SetMode((addressModifier & 0x1) ? kData : kProgram); 
+  return 0;
+
+}
+
+int32_t TUVMEDevice::Enable()
+{
+  if ( WriteControlRegister() < 0 ) return -1;
+
+
+  /* Setting memory handling. */
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_IOREMAP, ((fUseIORemap) ? 1 : 0)) < 0 ) return -1;  
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_BS, fPCIOffset) < 0 ) return -1; 
   if ( ioctl(fFileNum, UNIVERSE_IOCSET_BD, fSizeOfImage) < 0 ) return -1; 
