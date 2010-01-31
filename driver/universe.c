@@ -697,10 +697,12 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 		// but we still can't manage this size of transfer.
 		// This means the calling function will have to
 		// break up the dma into smaller pieces.
+#ifdef UNIVERSE_DEBUG
 		printk(KERN_WARNING UNIVERSE_PREFIX "Requested DMA transfer is larger than 0x%lx\n", 
 			(long unsigned int) dev->buffer_length);
+#endif
 		up(&dev->sem);
-		return -EPERM;
+		return -ENXIO;
 	}				 
         
 #ifdef UNIVERSE_DEBUG
@@ -863,10 +865,12 @@ static ssize_t universe_write(struct file *file, const char *buf, size_t count, 
 		// but we still can't manage this size of transfer.
 		// This means the calling function will have to
 		// break up the dma into smaller pieces.
+#ifdef UNIVERSE_DEBUG
 		printk(KERN_WARNING UNIVERSE_PREFIX "Requested DMA transfer is larger than 0x%lx\n", 
 			(long unsigned int)dev->buffer_length);
+#endif
 		up(&dev->sem);
-		return -EPERM;
+		return -ENXIO;
 	}				 
         
 	// PCI Address
