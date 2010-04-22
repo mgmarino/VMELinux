@@ -1,0 +1,19 @@
+VMELinux Linux char driver and C/C++ API 
+for Tundra Universe II PCI-VME bridge chips.
+Developed for Linux 2.6.x kernels
+
+GNU FREE SOFTWARE
+This software is provided as is and is under the
+GNU Free Software Foundation License.
+
+This code was originally begun and based off of work done on vmelinux (http://www.vmelinux.org).  
+However, a significant amount of updating and rewriting has occurred to the code so that the driver is
+essentially brand new.  I have retained the credit to the original developers of vmelinux
+(Huggins and Wyrick) as their code provided the inspiration for this.  
+
+This code runs on 2.6.x kernels.  
+
+Please email me (Mike Marino < mmarino at gmail dot com >) 
+for support issues or questions.
+
+Copyright Michael Marino, University of Washington 2008 
