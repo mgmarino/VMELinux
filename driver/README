@@ -1,27 +1,13 @@
-$Id: README,v 1.4 2001/10/27 03:50:07 jhuggins Exp $
-
-This version runs on 2.2.x and 2.4.x kernels. 
-/* Update: Michael Marino.  This code now runs on 2.6.x kernels.  
-   Backwards compatibility has not been determined. */
-
 GNU FREE SOFTWARE
 This software is provided as is and is under the
-GNU Free Software Foundation License.  A copy of this
-license is available from http://www.vmelinux.org/.
+GNU Free Software Foundation License.
 
-We encourage development and improvement of this code.
-If you have improvements, please let us know at
-vmelinux@va.net so we may include your efforts in the
-VMELinux effort.
+This code was originally begun and based off of work done on vmelinux (http://www.vmelinux.org).  
+However, a significant amount of updating and rewriting has occurred to the code so that the driver is
+essentially brand new.  I have retained the credit to the original developers of vmelinux
+(Huggins and Wyrick) as their code provided the inspiration for this set.  
 
-TECHNICAL SUPPORT
-If you are having difficulties with loading Linux on your
-VME system and running VMELinux, we can provide consulting.  Call
-(703)912-6214 for assistance.  Please understand that this
-is not a free technical support line.
+This code runs on 2.6.x kernels.  
 
-FREE TECHNICAL SUPPORT
-If you need free support please consult the latest version of the
-VMELinux howto available at http://www.vmelinux.org/.  There is also 
-a mailing list available on this web site.
-
+Please email me (Mike Marino < mmarino at gmail dot com >) for support issues 
+or questions.
