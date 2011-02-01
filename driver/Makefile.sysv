@@ -1,0 +1,10 @@
+setup_driver_auto:
+	@echo "Setting up driver automatically for System V."
+	@rm -f /etc/rc.d/rc[0-6].d/$(BASENAME)
+	@for i in 2 3 4 5; do ln -s $(INSTALLINITDIR)/$(BASENAME) /etc/rc.d/rc$$i.d/; done   
+	@$(INSTALLINITDIR)/$(BASENAME) start
+
+uninstall_driver_auto:
+	@echo "Removing driver automatically for System V."
+	@rm -f /etc/rc.d/rc[0-6].d/$(BASENAME)
+	@rm -f $(INSTALLINITDIR)/$(BASENAME)	

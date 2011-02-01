@@ -1,19 +1,8 @@
 #!/bin/sh
 ISSUEFILE=/etc/issue
-
-if grep "Fedora" ${ISSUEFILE} > /dev/null ; then
-  echo "rh"
-elif grep "Red Hat" ${ISSUEFILE} > /dev/null ; then
-  echo "rh"
-elif grep "CRUX" ${ISSUEFILE} > /dev/null ; then
-  echo "crux"
+if grep -q "Fedora" ${ISSUEFILE} > /dev/null ; then echo "rh"
+elif grep -q "Red Hat" ${ISSUEFILE} > /dev/null ; then echo "rh"
+elif grep -q "CRUX" ${ISSUEFILE} > /dev/null ; then echo "crux"
+# interesting, slackware uses sysv style for init
+elif grep -q "\\\\s \\\\r" ${ISSUEFILE} > /dev/null ; then echo "sysv"
 fi
-#CURRENTOS=`uname -r | awk -F'.' '{print $NF}'`
-#
-#if echo "$CURRENTOS" | grep "fc" > /dev/null ; then
-#  echo "rh"
-#elif echo "$CURRENTOS" | grep "rh" > /dev/null ; then
-#  echo "rh"
-#elif echo "$CURRENTOS" | grep "crux" > /dev/null; then
-#  echo "crux"
-#fi
