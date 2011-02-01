@@ -9,7 +9,8 @@
 #include "TUVMEDeviceLock.hh"
 
 /*
- * This class represents a slave window in the Tundra Universe II chip.
+ * This class represents a slave (PCI) window in the Tundra Universe II chip.
+ * This is the base class for all windows using the chip  
  */
 
 class TUVMEDevice {
