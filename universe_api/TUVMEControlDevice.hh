@@ -18,7 +18,8 @@ class TUVMEControlDevice: public TUVMEDevice {
                         kFastest = 2 };
 
     enum EBoardType { kUnknown = UNIVERSE_BOARD_TYPE_UNKNOWN,
-	              kCCT     = UNIVERSE_BOARD_TYPE_CCT }; 
+	              kCCT     = UNIVERSE_BOARD_TYPE_CCT,
+                      kVMIC    = UNIVERSE_BOARD_TYPE_VMIC }; 
     
     virtual std::string GetDeviceStringName() {return "vme_ctl";}    
     virtual int Enable() {return 0;} 

@@ -30,16 +30,37 @@ int TUVMEControlDevice::Open()
 void TUVMEControlDevice::SetHWByteSwap(bool doByteSwap)
 {
   /* Currently, we only support the Concurrent board 
-   * with this functionality.                        */
-  if ( GetBoardType() != kCCT ) return;
-  uint8_t value = ReadIOPortMemory( CONCURRENT_VX_CSR0 );
-  /* First make sure the bits are cleared. */
-  value &= ~ ( CONCURRENT_HW_BYTE_SWAP_MASTER | 
-               CONCURRENT_HW_BYTE_SWAP_SLAVE  |
-	       CONCURRENT_HW_BYTE_SWAP_FAST );
-  /* Now set them. */
-  value |= CONCURRENT_HW_BYTE_SWAP_MASTER;
-  WriteIOPortMemory( CONCURRENT_VX_CSR0, value );
+   * and VMIC-based boards with this funcionality.   */
+  EBoardType type = GetBoardType();
+  uint8_t value = 0;
+  uint32_t temp = 0;
+  uint32_t temptwo = 0;
+  switch (type) {
+    case kCCT:
+      value = ReadIOPortMemory( CONCURRENT_VX_CSR0 );
+      /* First make sure the bits are cleared. */
+      value &= ~ ( CONCURRENT_HW_BYTE_SWAP_MASTER | 
+                   CONCURRENT_HW_BYTE_SWAP_SLAVE  |
+                   CONCURRENT_HW_BYTE_SWAP_FAST );
+      /* Now set them. */
+      value |= CONCURRENT_HW_BYTE_SWAP_MASTER;
+      WriteIOPortMemory( CONCURRENT_VX_CSR0, value );
+      break;
+    case kVMIC:
+      if ( ioctl(fFileNum, UNIVERSE_IOCREAD_VME_COMM, &temp) < 0 ) return; 
+
+      // We disable the big endianness and the bypass.  
+      // FixME: Is this right?!
+      temptwo = ( UNIVERSE_VMIC_ENABLE_MASTER_BIG_ENDIAN | 
+		  UNIVERSE_VMIC_ENABLE_SLAVE_BIG_ENDIAN |
+		  UNIVERSE_VMIC_ENABLE_ENDIAN_CONV_BYPASS );
+      temp &= ~temptwo;
+      if ( ioctl(fFileNum, UNIVERSE_IOCSET_VME_COMM, temp) < 0 ) return;
+      break;
+    default:
+      break;
+  }
+
 }
 
 size_t TUVMEControlDevice::GetPCIMemorySize()
