@@ -7,6 +7,9 @@
 //platform: Linux 2.6
 //language: GCC 4.x
 //module: universe
+//------------------------------------------------------------------------------	
+// Updating driver to handle GE cards and those with VMIC devices
+//   M. Marino Oct 2011
 //
 //------------------------------------------------------------------------------	
 // more major code fixes, updates.  Basically, this code is brand new, but I'm
@@ -91,6 +94,12 @@ MODULE_LICENSE("GPL");
 #ifndef PCI_DEVICE_ID_TUNDRA_CA91C042
 	#define PCI_DEVICE_ID_TUNDRA_CA91C042 0x0000
 #endif
+#ifndef PCI_VENDOR_ID_VMIC 
+	#define PCI_VENDOR_ID_VMIC 0x114A
+#endif
+#ifndef PCI_DEVICE_ID_VMIC_VME
+	#define PCI_DEVICE_ID_VMIC_VME 0x0004
+#endif
 
 #define UNIVERSE_PREFIX  "universe: "
 
@@ -137,6 +146,11 @@ static struct universe_driv {
 	int ioctls;			/* ioctls performed on the driver. */
 } universe_driver;
 
+static struct vmic_driv {
+	struct pci_dev *pci_dev;	/* PCI Device */
+	void *baseaddr;			/* Base address of VMECOMM. */
+} vmic_driver;
+
 //----------------------------------------------------------------------------
 // Prototypes
 //----------------------------------------------------------------------------
@@ -159,6 +173,9 @@ static int	universe_check_bus_error(void);
 static void 	universe_dma_timeout(unsigned long);
 static irqreturn_t universe_irq_handler(int irq, void *dev_id);
 static int	universe_ioport_default_permissions(uint16_t);
+
+static int	universe_check_for_vmic(void);
+static void	universe_shutdown_vmic(void);
 
 //----------------------------------------------------------------------------
 // Static variables 
@@ -219,6 +236,10 @@ universe_exit_module(void)
 {					
 	int i;
 	dev_t dev_number = MKDEV(universe_major, universe_minor);
+
+	// ---------------------------------------------------------
+	// Remove VMIC if it exists.
+	universe_shutdown_vmic();
 
 	// ---------------------------------------------------------
 #ifdef UNIVERSE_DEBUG
@@ -441,6 +462,7 @@ universe_init_module(void)
 	// Setting up the universe devices
 	for(i=0;i<universe_nr_devs;i++) universe_setup_universe_dev(&universe_devices[i], i);	
 	// ---------------------------------------------------------
+	universe_check_for_vmic();
 
 	// Success 
 	return 0; 
@@ -540,6 +562,12 @@ static int universe_open(struct inode *inode,struct file *file)
 #endif
 	if (minor == CONTROL_MINOR) {
 		universe_ioport_permissions = universe_ioport_default_permissions;
+		if ( vmic_driver.baseaddr ) {
+			// Means we are a GE/VMIC board
+			universe_board_type = UNIVERSE_BOARD_TYPE_VMIC;
+			return 0;
+		}
+		// Otherwise continue checking.
 #ifndef CONFIG_DMI
 		printk( KERN_ERR UNIVERSE_PREFIX "ioctl error: kernel not compiled with CONFIG_DMI.\n"); 
 		printk( KERN_ERR UNIVERSE_PREFIX "ioctl error: Driver unable to determine SBC type.\n"); 
@@ -691,7 +719,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 	universe_driver.dma.dma_align = dev->vme_address & 0x7;	
 	universe_driver.dma.dma_size = count;
 	universe_driver.dma.dma_direction = DMA_FROM_DEVICE;
-        if (universe_driver.dma.dma_size + 
+    if (universe_driver.dma.dma_size + 
 	    universe_driver.dma.dma_align > dev->buffer_length) {
 		// We've requested the max size of contiguous pages
 		// but we still can't manage this size of transfer.
@@ -862,7 +890,7 @@ static ssize_t universe_write(struct file *file, const char *buf, size_t count, 
 	universe_driver.dma.dma_align = dev->vme_address & 0x7;	
 	universe_driver.dma.dma_size = count;
 	universe_driver.dma.dma_direction = DMA_TO_DEVICE;
-        if (universe_driver.dma.dma_size + 
+    if (universe_driver.dma.dma_size + 
 	    universe_driver.dma.dma_align > dev->buffer_length) {
 		// We've requested the max size of contiguous pages
 		// but we still can't manage this size of transfer.
@@ -988,6 +1016,7 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 {
 	unsigned int minor = MINOR(inode->i_rdev);
 	unsigned long sizetomap = 0, bs = 0;
+	unsigned int vmecomm_reg = 0;
 	struct universe_ioport_ioctl ioport_str;
 	int err  = 0;
 	struct universe_dev *dev;
@@ -1132,13 +1161,6 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 			return -EIO;
 		}
 		break;
-		//readBack = (0x38 & arg);
-		//outb(readBack, VX407_CSR0);	
-		//if ((0x38 & arg) != (readBack = (0x38 & inb(VX407_CSR0)))) { 
-		//	printk(	KERN_WARNING UNIVERSE_PREFIX " Hardware swap not set at address 0x%x. Set: 0x%x, Readback: 0x%x\n", 
-		//		VX407_CSR0, (unsigned int)(0x38 & arg), readBack);
-		//	return -EIO;
-		//}
 
 	case UNIVERSE_IOCIO_PORT_WRITE:
 		/* This driver essentially circumvents ioperm by allowing processes to 
@@ -1171,6 +1193,24 @@ static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd
 
 	case UNIVERSE_IOCCHECK_BUS_ERROR:
 		return universe_check_bus_error();
+
+	case UNIVERSE_IOCSET_VME_COMM:
+		if (minor != CONTROL_MINOR) return -EPERM;
+		if (!vmic_driver.baseaddr) return -ENXIO;
+#ifdef UNIVERSE_DEBUG
+		printk( KERN_INFO UNIVERSE_PREFIX " Writing %lx to VMIC VMECOMM.\n", arg);
+#endif
+		iowrite32(arg, vmic_driver.baseaddr);
+		break;
+
+	case UNIVERSE_IOCREAD_VME_COMM:
+		if (minor != CONTROL_MINOR) return -EPERM;
+		if (!vmic_driver.baseaddr) return -ENXIO;
+		vmecomm_reg = ioread32(vmic_driver.baseaddr);
+#ifdef UNIVERSE_DEBUG
+		printk( KERN_INFO UNIVERSE_PREFIX " Read %x from VMIC VMECOMM.\n", vmecomm_reg);
+#endif
+		return __put_user(vmecomm_reg, (unsigned int __user *)arg );
 
 	}
 	return 0;
@@ -1362,4 +1402,89 @@ static void universe_dma_timeout(unsigned long notused)
 	/* Call the interrupt handler. */
 	spin_unlock(&universe_driver.dma.lock);
 	universe_irq_handler(universe_driver.irq, NULL);
+}
+//----------------------------------------------------------------------------
+//
+//	universe_check_for_vmic()
+//		This function checks to see if we are on a GE board.
+//
+//----------------------------------------------------------------------------
+static int universe_check_for_vmic(void)
+{
+	int result = 0;
+	u32 temp;
+	vmic_driver.pci_dev = NULL;
+	vmic_driver.baseaddr = NULL;
+	// ---------------------------------------------------------
+	// Setup VMIC BAR0 space 
+	if (!(vmic_driver.pci_dev = pci_get_device(PCI_VENDOR_ID_VMIC,
+						PCI_DEVICE_ID_VMIC_VME, 
+						NULL))) {
+		// It is not a problem if we can't find the VMIC device, it is
+		// then assumed that this is not a GE card.
+#ifdef UNIVERSE_DEBUG
+		printk(KERN_INFO UNIVERSE_PREFIX "VMIC device not found on PCI Bus, assuming not GE.\n");
+#endif
+		goto no_vmic_device;
+	}
+	printk(KERN_INFO UNIVERSE_PREFIX "VMIC device found, must be a GE board.\n");
+	// ---------------------------------------------------------
+	// Enable device 
+	if (pci_enable_device(vmic_driver.pci_dev)) {
+		// Could not enable the device, something is wrong.
+		printk(KERN_ERR UNIVERSE_PREFIX "Failed to enable VMIC device.\n");
+		result = -ENODEV;
+		goto vmic_devput;
+	}
+	// ---------------------------------------------------------
+	// Request VMIC BAR0 region 
+	if (pci_request_region(vmic_driver.pci_dev, 0, "universe")) {
+		printk(KERN_ERR UNIVERSE_PREFIX "Request VMIC pci region failed.\n");
+		result = -EBUSY;
+		goto vmic_disable;
+	}
+
+	// ---------------------------------------------------------
+	// Setup VMIC BAR0 space 
+	vmic_driver.baseaddr = (void *)ioremap(pci_resource_start(vmic_driver.pci_dev, 0), 
+					    pci_resource_len(vmic_driver.pci_dev, 0));
+	if (!vmic_driver.baseaddr) {
+		printk(KERN_ERR UNIVERSE_PREFIX "ioremap failed to map VMIC Bar #0 to Kernel Space.\n");
+		result = -ENOMEM;
+		goto vmic_release_region;
+	}
+	// Enable VME bus transactions.
+	temp = ioread32(vmic_driver.baseaddr);
+	temp = temp | UNIVERSE_VMIC_ENABLE_VME_BUS;
+	iowrite32(temp, vmic_driver.baseaddr);
+	printk(KERN_INFO UNIVERSE_PREFIX "VMIC device specifications:\n");
+	printk(KERN_INFO UNIVERSE_PREFIX "    Model: %x\n", vmic_driver.pci_dev->subsystem_device);
+	return result; 
+	// Error conditions
+vmic_release_region:
+        pci_release_region(vmic_driver.pci_dev, 0);
+vmic_disable:
+        pci_disable_device(vmic_driver.pci_dev);
+vmic_devput:
+	pci_dev_put(vmic_driver.pci_dev);
+no_vmic_device:
+	return result; 
+}
+//----------------------------------------------------------------------------
+//
+//	universe_shutdown_vmic()
+//		This function checks to see if we are on a GE board.
+//
+//----------------------------------------------------------------------------
+	
+static void universe_shutdown_vmic(void)
+{
+	if (!vmic_driver.baseaddr) return;
+	// Disable VME transactions
+	iowrite32(0x0, vmic_driver.baseaddr);
+	iounmap(vmic_driver.baseaddr);
+        pci_release_region(vmic_driver.pci_dev, 0);
+        pci_disable_device(vmic_driver.pci_dev);
+	pci_dev_put(vmic_driver.pci_dev);
+
 }
