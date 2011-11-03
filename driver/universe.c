@@ -746,19 +746,22 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 	}
 	// OK, so we waited and it apparently completed.  Check for errors.
 	val = ioread32(universe_driver.baseaddr+DGCS);
-	if (!(val & 0x00000800)) {
+	//04/02/2011 commented off by JK, incompatible with CAEN,
+	//changed to: try to copy, return 0 if success, and let user decide what to do
+	//if (!(val & 0x00000800)) {
 #ifdef UNIVERSE_DEBUG
-		printk(KERN_WARNING UNIVERSE_PREFIX "Requested DMA read transfer failed.\n");
+	//	printk(KERN_WARNING UNIVERSE_PREFIX "Requested DMA read transfer failed.\n");
 #endif
-		up(&dev->sem);
-		return 0;
-	}
+	//	up(&dev->sem);
+	//	return 0;
+	//}
 	if(copy_to_user(buf, dev->buffer + universe_driver.dma.dma_align, 
 			universe_driver.dma.dma_size)) {
 		up(&dev->sem);
 		return -EFAULT; 
 	}
 	up(&dev->sem);
+	if (!(val & 0x00000800)) return 0; 
 	return count;
 
 readout_minor:
