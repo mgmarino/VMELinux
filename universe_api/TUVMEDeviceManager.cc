@@ -231,6 +231,15 @@ void unlock_device(TUVMEDevice* dev)
   dev->UnlockDevice();
 }
 
+int32_t setup_device(TUVMEDevice* dev, uint32_t vme_address, uint32_t address_modifier, uint32_t data_width)
+{
+    uint32_t base_address = vme_address & 0xFFFF0000;
+    dev->SetWithAddressModifier(address_modifier);
+    dev->SetVMEAddress(base_address);
+    dev->SetDataWidth((TUVMEDevice::ETUVMEDeviceDataWidth)data_width);
+    return 0;
+}
+
 int32_t read_device(TUVMEDevice* dev, char* buffer, uint32_t numBytes, uint32_t offset)
 {
   return dev->Read(buffer, numBytes, offset);

@@ -118,7 +118,7 @@ extern "C" {
    could be called across different threads. */
 extern void lock_device(TUVMEDevice*);
 extern void unlock_device(TUVMEDevice*);
-
+extern int32_t setup_device(TUVMEDevice* dev, uint32_t vme_address, uint32_t address_modifier, uint32_t data_width);
 extern int32_t read_device(TUVMEDevice*, char* buffer, uint32_t numBytes, uint32_t offset);
   /* reads numBytes bytes from a device into a buffer at an offset on the device. */
 extern int32_t write_device(TUVMEDevice*, char* buffer, uint32_t numBytes, uint32_t offset);
