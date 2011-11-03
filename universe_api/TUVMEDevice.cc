@@ -222,7 +222,7 @@ int32_t TUVMEDevice::Write(char* buffer, uint32_t numBytes, uint32_t offset)
     else return 0;
   } else {
     lseek(fFileNum, offset, SEEK_SET);
-    checker = read(fFileNum, buffer, numBytes); 
+    checker = write(fFileNum, buffer, numBytes); 
     fSystemLock.Unlock();
     return checker;
   }
