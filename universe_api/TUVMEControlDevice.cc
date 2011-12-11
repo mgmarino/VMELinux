@@ -34,7 +34,6 @@ void TUVMEControlDevice::SetHWByteSwap(bool doByteSwap)
   EBoardType type = GetBoardType();
   uint8_t value = 0;
   uint32_t temp = 0;
-  uint32_t temptwo = 0;
   switch (type) {
     case kCCT:
       value = ReadIOPortMemory( CONCURRENT_VX_CSR0 );
@@ -50,11 +49,9 @@ void TUVMEControlDevice::SetHWByteSwap(bool doByteSwap)
       if ( ioctl(fFileNum, UNIVERSE_IOCREAD_VME_COMM, &temp) < 0 ) return; 
 
       // We disable the big endianness and the bypass.  
-      // FixME: Is this right?!
-      temptwo = ( UNIVERSE_VMIC_ENABLE_MASTER_BIG_ENDIAN | 
-		  UNIVERSE_VMIC_ENABLE_SLAVE_BIG_ENDIAN |
-		  UNIVERSE_VMIC_ENABLE_ENDIAN_CONV_BYPASS );
-      temp &= ~temptwo;
+      temp &= ~UNIVERSE_VMIC_ENABLE_ENDIAN_CONV_BYPASS;
+      temp |= UNIVERSE_VMIC_ENABLE_MASTER_BIG_ENDIAN;
+      temp |= UNIVERSE_VMIC_ENABLE_SLAVE_BIG_ENDIAN;
       if ( ioctl(fFileNum, UNIVERSE_IOCSET_VME_COMM, temp) < 0 ) return;
       break;
     default:
