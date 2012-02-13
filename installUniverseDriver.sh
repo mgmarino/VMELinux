@@ -42,8 +42,11 @@ download()
 inflate()
 {
   echo "Inflating..."
-  tar xmfz $output_file 
-
+  tmp_dir_name="/tmp/universe_tmp_output_$$.tmp"
+  mkdir $tmp_dir_name
+  tar xmfz $output_file -C $tmp_dir_name 
+  mv $tmp_dir_name/mgmarino-VMELinux-* $name-$version 
+  rm -rf $tmp_dir_name
 }
 
 install() 
