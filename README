@@ -11,7 +11,7 @@ However, a significant amount of updating and rewriting has occurred to the code
 essentially brand new.  I have retained the credit to the original developers of vmelinux
 (Huggins and Wyrick) as their code provided the inspiration for this.  
 
-This code runs on 2.6.x kernels.  
+This code runs on 2.6.x kernels, as well as 3.x kernels.
 
 Please email me (Mike Marino < mmarino at gmail dot com >) 
 for support issues or questions.

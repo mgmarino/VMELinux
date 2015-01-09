@@ -103,6 +103,9 @@ MODULE_LICENSE("GPL");
 
 #define UNIVERSE_PREFIX  "universe: "
 
+#ifndef VM_RESERVED
+#define VM_RESERVED (VM_DONTEXPAND | VM_DONTDUMP)
+#endif
 
 //----------------------------------------------------------------------------
 // structs 
@@ -151,6 +154,12 @@ static struct vmic_driv {
 	void *baseaddr;			/* Base address of VMECOMM. */
 } vmic_driver;
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,36)
+#define IOCTL_NAME unlocked_ioctl
+#define UNLOCKED_VERS
+#else
+#define IOCTL_NAME ioctl
+#endif
 //----------------------------------------------------------------------------
 // Prototypes
 //----------------------------------------------------------------------------
@@ -159,7 +168,11 @@ static int	universe_release(struct inode *, struct file *);
 static loff_t	universe_llseek(struct file *,loff_t,int);
 static ssize_t	universe_read(struct file *,char *, size_t, loff_t *);
 static ssize_t	universe_write(struct file *,const char *, size_t, loff_t *);
+#if defined(UNLOCKED_VERS)
+static long	universe_ioctl(struct file *, unsigned int, unsigned long);
+#else
 static int	universe_ioctl(struct inode *, struct file *, unsigned int, unsigned long);
+#endif
 static int	universe_mmap(struct file *,struct vm_area_struct *);
 
 static int	universe_init_module(void);
@@ -187,7 +200,7 @@ static struct file_operations universe_fops =
 	.llseek		= universe_llseek,
 	.read		= universe_read,
 	.write	 	= universe_write,
-	.ioctl	 	= universe_ioctl,
+	.IOCTL_NAME 	= universe_ioctl,
 	.open		= universe_open,
 	.release	= universe_release, 
 	.mmap		= universe_mmap 
@@ -517,7 +530,11 @@ static void universe_setup_universe_dev(struct universe_dev *dev, int index)
 	}
 
 	// Initializing semaphore
+#ifndef init_MUTEX
+	sema_init(&dev->sem, 1);
+#else
 	init_MUTEX(&dev->sem);
+#endif
 	// Default is to ioremap so set that flag.
 	dev->image_perform_ioremap = 1;
 	// we only allow one process at a time to access
@@ -547,7 +564,7 @@ static void universe_setup_universe_dev(struct universe_dev *dev, int index)
 static int universe_open(struct inode *inode,struct file *file)
 {
 	struct universe_dev *dev; 
-	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);	
+	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
 	dev = container_of(inode->i_cdev, struct universe_dev, cdev);
 
 	// We only allow a device to be open once.
@@ -622,7 +639,7 @@ static int universe_release(struct inode *inode,struct file *file)
 {
 	struct universe_dev *dev = file->private_data; 
 #ifdef UNIVERSE_DEBUG
-	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);	
+	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
 	printk( KERN_DEBUG UNIVERSE_PREFIX "Closing universe file: %d\n", minor);
 #endif
 
@@ -683,7 +700,7 @@ static ssize_t universe_read(struct file *file, char *buf, size_t count, loff_t 
 	unsigned int v,numt,remain,tmp,done_reading;
 	int 	val	= 0;
 
-	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);	
+	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
 	struct universe_dev *dev = file->private_data; 
 
 	universe_driver.reads++;
@@ -1012,9 +1029,13 @@ write_minor:
 //		UNIVERSE_IOCGET_MEM_SIZE:		get size of pci memory set aside by the driver
 //		default: write ard to the register given by the cmd number
 
+#if defined(UNLOCKED_VERS)
+static long universe_ioctl(struct file *file,unsigned int cmd, unsigned long arg)
+#else
 static int universe_ioctl(struct inode *inode,struct file *file,unsigned int cmd, unsigned long arg)
+#endif
 {
-	unsigned int minor = MINOR(inode->i_rdev);
+	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
 	unsigned long sizetomap = 0, bs = 0;
 	unsigned int vmecomm_reg = 0;
 	struct universe_ioport_ioctl ioport_str;
