@@ -50,6 +50,13 @@
 static char Version[] = "2.0.b1 2008Nov05";
 
 #include <linux/version.h>
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,11)
+// Older versions didn't include dependent headers
+#include <linux/kobject.h>
+#include <linux/kdev_t.h>
+#include <linux/list.h>
+struct inode;
+#endif
 #include <linux/cdev.h>
 #include <linux/poll.h>
 #include <linux/init.h>
@@ -184,7 +191,11 @@ static void	universe_vma_close(struct vm_area_struct *);
 static void	universe_setup_universe_dev(struct universe_dev *, int index); 
 static int	universe_check_bus_error(void);
 static void 	universe_dma_timeout(unsigned long);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
 static irqreturn_t universe_irq_handler(int irq, void *dev_id);
+#else
+static irqreturn_t universe_irq_handler(int irq, void *dev_id, struct pt_regs *);
+#endif
 static int	universe_ioport_default_permissions(uint16_t);
 
 static int	universe_check_for_vmic(void);
@@ -431,7 +442,13 @@ universe_init_module(void)
 	// Grabbing the interrupt request
 	universe_driver.irq = universe_driver.pci_dev->irq; 
 	// We have to share or at least be able to handle sharing since the PCI bus automatically share the lines.
-	result = request_irq(universe_driver.irq, universe_irq_handler, IRQF_SHARED, "universe", &universe_driver);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
+	result = request_irq(universe_driver.irq, universe_irq_handler,
+           IRQF_SHARED, "universe", &universe_driver);
+#else
+	result = request_irq(universe_driver.irq, universe_irq_handler,
+           SA_SHIRQ, "universe", &universe_driver);
+#endif
 	if (result) {
 		printk(KERN_ERR UNIVERSE_PREFIX "Can't get assigned irq %d\n", universe_driver.irq);
 		result = -EBUSY;
@@ -1276,11 +1293,19 @@ static int universe_mmap(struct file *file,struct vm_area_struct *vma)
 	printk(KERN_DEBUG UNIVERSE_PREFIX "  Mapping physical address (0x%lx), size (0x%lx) to user space\n", 
 		physical_address, virtual_size);
 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,10)
 	if (remap_pfn_range( 	vma, 
 				vma->vm_start, 
 				physical_address >> PAGE_SHIFT, 
 				virtual_size, 
 				vma->vm_page_prot)) {
+#else
+	if (remap_page_range( 	vma,
+				vma->vm_start,
+				physical_address,
+				virtual_size,
+				vma->vm_page_prot)) {
+#endif
 		/* Something failed, maybe try again? */
 		return -EAGAIN;
 	}
@@ -1342,7 +1367,11 @@ static int universe_check_bus_error(void)
 //	universe_irq_handler()
 //
 //----------------------------------------------------------------------------
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
 static irqreturn_t universe_irq_handler(int irq, void *dev_id)
+#else
+static irqreturn_t universe_irq_handler(int irq, void *dev_id, struct pt_regs *pt)
+#endif
 {
 	long stat;
 	/* OK check to see if this is the correct interrupt. */
@@ -1422,7 +1451,11 @@ static void universe_dma_timeout(unsigned long notused)
 #endif
 	/* Call the interrupt handler. */
 	spin_unlock(&universe_driver.dma.lock);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
 	universe_irq_handler(universe_driver.irq, NULL);
+#else
+	universe_irq_handler(universe_driver.irq, NULL, NULL);
+#endif
 }
 //----------------------------------------------------------------------------
 //
