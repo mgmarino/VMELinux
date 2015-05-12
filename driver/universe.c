@@ -47,7 +47,7 @@
 //
 //-----------------------------------------------------------------------------
 
-static char Version[] = "2.0.b1 2008Nov05";
+static char Version[] = "2.1 2015May12";
 
 #include <linux/version.h>
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,11)
