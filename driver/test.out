@@ -1,8 +1,0 @@
-make -C /lib/modules/2.6.35.10-smp/build M=/home/mgmarino/VMELinux/driver modules
-make[1]: Entering directory `/usr/src/linux-2.6.35.10'
-  CC [M]  /home/mgmarino/VMELinux/driver/universe.o
-  Building modules, stage 2.
-  MODPOST 1 modules
-  CC      /home/mgmarino/VMELinux/driver/universe.mod.o
-  LD [M]  /home/mgmarino/VMELinux/driver/universe.ko
-make[1]: Leaving directory `/usr/src/linux-2.6.35.10'
