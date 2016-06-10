@@ -79,8 +79,8 @@ struct inode;
 static unsigned long size_to_reserve		= 0x10000000; // 256 MB reserved
 static unsigned long reserve_from_address	= 0xC0000000; // reserve from high mem
 
-module_param(size_to_reserve, long, 0);
-module_param(reserve_from_address, long, 0);
+module_param(size_to_reserve, ulong, 0);
+module_param(reserve_from_address, ulong, 0);
 MODULE_PARM_DESC(size_to_reserve, "Give the size of pci space to reserve. ");
 MODULE_PARM_DESC(reserve_from_address, "Give a starting pci address from which to reserve.");
 MODULE_LICENSE("GPL");
